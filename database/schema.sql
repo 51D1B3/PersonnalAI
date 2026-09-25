@@ -1,26 +1,41 @@
 -- ==========================================
--- PersonalAI - Supabase Database Schema
+-- PersonalAI - Database Schema (Supabase / PostgreSQL + pgvector)
 -- ==========================================
 
--- 1. Enable pgvector extension for AI & Semantic search
+-- 1. Enable pgvector extension & uuid-ossp for AI Vector search
 CREATE EXTENSION IF NOT EXISTS vector;
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- 2. Allowed Users Table (Strict Auth Control)
+-- 2. Allowed Users Table (Strict Auth Access Control - 2 Authorized Emails)
 CREATE TABLE IF NOT EXISTS public.allowed_users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     email TEXT UNIQUE NOT NULL,
     name TEXT,
+    role TEXT DEFAULT 'User',
     created_at TIMESTAMPTZ DEFAULT now()
 );
 
+-- Seed Predefined Allowed Users (Cahier des charges: 2 email accounts)
+INSERT INTO public.allowed_users (email, name, role) 
+VALUES 
+    ('sidibe@personalai.dev', 'Sidibé', 'Propriétaire'),
+    ('admin@personalai.dev', 'Administrateur', 'Co-Propriétaire')
+ON CONFLICT (email) DO NOTHING;
+
 -- RLS for Allowed Users
 ALTER TABLE public.allowed_users ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow public read of allowed emails" ON public.allowed_users FOR SELECT USING (true);
 
-CREATE POLICY "Allow public read of allowed emails" ON public.allowed_users
-    FOR SELECT USING (true);
+-- 3. Users Profile Table (Extends Supabase auth.users)
+CREATE TABLE IF NOT EXISTS public.users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email TEXT UNIQUE NOT NULL,
+    name TEXT NOT NULL,
+    avatar_url TEXT,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
 
--- 3. Documents Table (PDFs, Docs)
+-- 4. Documents Table (PDFs, Docs)
 CREATE TABLE IF NOT EXISTS public.documents (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -37,13 +52,10 @@ CREATE TABLE IF NOT EXISTS public.documents (
     updated_at TIMESTAMPTZ DEFAULT now()
 );
 
--- RLS for Documents
 ALTER TABLE public.documents ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can manage their own documents" ON public.documents FOR ALL USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can manage their own documents" ON public.documents
-    FOR ALL USING (auth.uid() = user_id);
-
--- 4. Images Table (OCR, Screenshots)
+-- 5. Images Table (Screenshots, OCR)
 CREATE TABLE IF NOT EXISTS public.images (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -58,13 +70,10 @@ CREATE TABLE IF NOT EXISTS public.images (
     updated_at TIMESTAMPTZ DEFAULT now()
 );
 
--- RLS for Images
 ALTER TABLE public.images ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can manage their own images" ON public.images FOR ALL USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can manage their own images" ON public.images
-    FOR ALL USING (auth.uid() = user_id);
-
--- 5. Videos Table (Transcriptions, Media)
+-- 6. Videos Table (Transcriptions Whisper, Media)
 CREATE TABLE IF NOT EXISTS public.videos (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -79,13 +88,10 @@ CREATE TABLE IF NOT EXISTS public.videos (
     updated_at TIMESTAMPTZ DEFAULT now()
 );
 
--- RLS for Videos
 ALTER TABLE public.videos ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can manage their own videos" ON public.videos FOR ALL USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can manage their own videos" ON public.videos
-    FOR ALL USING (auth.uid() = user_id);
-
--- 6. Links Table (Web Resources)
+-- 7. Links Table (Web Resources, Bookmarks)
 CREATE TABLE IF NOT EXISTS public.links (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -98,13 +104,10 @@ CREATE TABLE IF NOT EXISTS public.links (
     updated_at TIMESTAMPTZ DEFAULT now()
 );
 
--- RLS for Links
 ALTER TABLE public.links ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can manage their own links" ON public.links FOR ALL USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can manage their own links" ON public.links
-    FOR ALL USING (auth.uid() = user_id);
-
--- 7. Notes Table (Personal Notes & Vault)
+-- 8. Notes Table (Personal Notes & Vault)
 CREATE TABLE IF NOT EXISTS public.notes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -117,13 +120,30 @@ CREATE TABLE IF NOT EXISTS public.notes (
     updated_at TIMESTAMPTZ DEFAULT now()
 );
 
--- RLS for Notes
 ALTER TABLE public.notes ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can manage their own notes" ON public.notes FOR ALL USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can manage their own notes" ON public.notes
-    FOR ALL USING (auth.uid() = user_id);
+-- 9. Tags Table (Étape 16 & 17 - Dedicated Tags Entity & Relations)
+CREATE TABLE IF NOT EXISTS public.tags (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT UNIQUE NOT NULL,
+    color TEXT DEFAULT '#51D1B3',
+    created_at TIMESTAMPTZ DEFAULT now()
+);
 
--- 8. Triggers for updated_at
+-- Junction Table for Tag Relations across resources
+CREATE TABLE IF NOT EXISTS public.resource_tags (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tag_id UUID REFERENCES public.tags(id) ON DELETE CASCADE,
+    document_id UUID REFERENCES public.documents(id) ON DELETE CASCADE,
+    image_id UUID REFERENCES public.images(id) ON DELETE CASCADE,
+    video_id UUID REFERENCES public.videos(id) ON DELETE CASCADE,
+    link_id UUID REFERENCES public.links(id) ON DELETE CASCADE,
+    note_id UUID REFERENCES public.notes(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- 10. Triggers for auto-updating updated_at timestamp
 CREATE OR REPLACE FUNCTION update_modified_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -137,8 +157,3 @@ CREATE TRIGGER update_images_modtime BEFORE UPDATE ON public.images FOR EACH ROW
 CREATE TRIGGER update_videos_modtime BEFORE UPDATE ON public.videos FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
 CREATE TRIGGER update_links_modtime BEFORE UPDATE ON public.links FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
 CREATE TRIGGER update_notes_modtime BEFORE UPDATE ON public.notes FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
-
--- 9. Storage Buckets Configuration (Run in Supabase SQL Editor or Dashboard)
--- INSERT INTO storage.buckets (id, name, public) VALUES ('documents', 'documents', true);
--- INSERT INTO storage.buckets (id, name, public) VALUES ('images', 'images', true);
--- INSERT INTO storage.buckets (id, name, public) VALUES ('videos', 'videos', true);

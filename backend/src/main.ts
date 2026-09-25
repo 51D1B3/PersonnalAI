@@ -1,7 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module.js';
+import { ValidationPipe, Logger } from '@nestjs/common';
 import * as dotenv from 'dotenv';
-import { Logger } from '@nestjs/common';
 
 dotenv.config();
 
@@ -9,6 +9,15 @@ async function bootstrap() {
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule);
   
+  // Enable global DTO validation pipe
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+      forbidNonWhitelisted: false,
+    })
+  );
+
   // Enable CORS for frontend connection
   app.enableCors({
     origin: '*',
@@ -18,7 +27,7 @@ async function bootstrap() {
 
   const port = process.env.PORT || 3000;
   await app.listen(port);
-  logger.log(`🚀 PersonalAI Backend server running on http://localhost:${port}`);
+  logger.log(`🚀 PersonalAI Backend NestJS API running on http://localhost:${port}`);
 }
 
 await bootstrap();
