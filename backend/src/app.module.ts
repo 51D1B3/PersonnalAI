@@ -8,6 +8,11 @@ import { DocumentsModule } from './documents/documents.module.js';
 import { ImagesModule } from './images/images.module.js';
 import { LinksModule } from './links/links.module.js';
 import { NotesModule } from './notes/notes.module.js';
+import { VectorModule } from './vector/vector.module.js';
+import { UploadModule } from './upload/upload.module.js';
+import { AiModule } from './ai/ai.module.js';
+import { SearchModule } from './search/search.module.js';
+import { VideosModule } from './videos/videos.module.js';
 
 @Module({
   imports: [
@@ -18,8 +23,13 @@ import { NotesModule } from './notes/notes.module.js';
     AuthModule,
     DocumentsModule,
     ImagesModule,
+    VideosModule,
     LinksModule,
     NotesModule,
+    VectorModule,
+    UploadModule,
+    AiModule,
+    SearchModule,
   ],
   controllers: [AppController],
   providers: [AppService],

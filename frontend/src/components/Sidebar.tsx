@@ -40,16 +40,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <aside className="w-64 bg-[#101622] border-r border-[#222E42] flex flex-col h-screen select-none">
       {/* Brand Header */}
-      <div className="p-6 border-b border-[#222E42] flex items-center justify-between">
+      <div className="p-5 border-b border-[#222E42] flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-[#51D1B3] flex items-center justify-center text-[#0B0F17] font-extrabold text-base shadow-lg shadow-[#51D1B3]/25">
-            PA
-          </div>
+          <img 
+            src="/logo.png" 
+            alt="PersonalAI Logo" 
+            className="w-10 h-10 object-contain rounded-xl shadow-lg shadow-[#51D1B3]/20 shrink-0" 
+          />
           <div>
-            <h1 className="font-bold text-lg text-white tracking-wide leading-tight">
+            <h1 className="font-extrabold text-lg text-white tracking-wide leading-tight">
               Personal<span className="text-[#51D1B3]">AI</span>
             </h1>
-            <p className="text-[11px] text-gray-400">Mémoire Privée</p>
+            <p className="text-[10px] text-gray-400 font-medium">Mémoire Privée</p>
           </div>
         </div>
       </div>

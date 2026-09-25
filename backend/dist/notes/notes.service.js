@@ -13,19 +13,7 @@ import { SupabaseService } from '../supabase/supabase.service.js';
 let NotesService = NotesService_1 = class NotesService {
     supabaseService;
     logger = new Logger(NotesService_1.name);
-    mockNotes = [
-        {
-            id: 'note-1',
-            title: 'Notes de Configuration Supabase & JWT Tokens',
-            description: 'Mémo pour la gestion des variables d\'environnement et des clés de rôles de service.',
-            content: 'SUPABASE_URL=https://my-project.supabase.co\nDATABASE_URL=postgresql://...',
-            category: 'Sécurité',
-            tags: ['Config', 'Env', 'Tokens'],
-            type: 'NOTE',
-            isVault: true,
-            date: '18 Septembre 2026',
-        }
-    ];
+    mockNotes = [];
     constructor(supabaseService) {
         this.supabaseService = supabaseService;
     }

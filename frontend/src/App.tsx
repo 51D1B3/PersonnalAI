@@ -15,56 +15,7 @@ import { ParametresPage } from './pages/ParametresPage';
 
 import type { ResourceItem, UserProfile } from './types';
 
-const INITIAL_RESOURCES: ResourceItem[] = [
-  {
-    id: '1',
-    title: 'React Hooks & State Management Guide.pdf',
-    type: 'PDF',
-    category: 'Développement Web',
-    tags: ['React', 'JavaScript', 'Hooks'],
-    description: 'Cours complet sur useState, useEffect, et les hooks personnalisés avec exemples pratiques.',
-    date: '24 Septembre 2026'
-  },
-  {
-    id: '2',
-    title: 'Capture Erreur Prisma P1001.png',
-    type: 'IMAGE',
-    category: 'Backend / Database',
-    tags: ['Prisma', 'Bug', 'PostgreSQL'],
-    description: 'Capture d\'écran de l\'erreur de connexion à la base de données avec solution alternative.',
-    ocrText: 'Prisma P1001: Can\'t reach database server at localhost:5432',
-    date: '22 Septembre 2026'
-  },
-  {
-    id: '3',
-    title: 'Supabase Official Documentation & Vector Search',
-    type: 'LINK',
-    category: 'Backend',
-    tags: ['Supabase', 'Cloud', 'Auth', 'pgvector'],
-    description: 'Guide officiel Supabase pour la configuration de pgvector et RLS policies.',
-    url: 'https://supabase.com/docs',
-    date: '20 Septembre 2026'
-  },
-  {
-    id: '4',
-    title: 'Notes de Configuration Supabase & JWT Tokens',
-    type: 'NOTE',
-    category: 'Sécurité',
-    tags: ['Config', 'Env', 'Tokens'],
-    description: 'Mémo pour la gestion des variables d\'environnement et des clés de rôles de service.',
-    date: '18 Septembre 2026'
-  },
-  {
-    id: '5',
-    title: 'Tutoriel NestJS Microservices Architecture.mp4',
-    type: 'VIDEO',
-    category: 'Backend Architecture',
-    tags: ['NestJS', 'TypeScript', 'Microservices'],
-    description: 'Vidéo explicative sur la communication entre modules et controllers NestJS.',
-    transcript: 'Dans ce tutoriel NestJS, nous allons découvrir la puissance des decorators et l\'injection de dépendances...',
-    date: '15 Septembre 2026'
-  }
-];
+const INITIAL_RESOURCES: ResourceItem[] = [];
 
 export function App() {
   const [user, setUser] = useState<UserProfile | null>({

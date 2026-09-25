@@ -18,18 +18,7 @@ export interface ImageItem {
 export class ImagesService {
   private readonly logger = new Logger(ImagesService.name);
 
-  private mockImages: ImageItem[] = [
-    {
-      id: 'img-1',
-      title: 'Capture Erreur Prisma P1001.png',
-      description: 'Capture d\'écran de l\'erreur de connexion à la base de données avec solution alternative.',
-      category: 'Backend / Database',
-      tags: ['Prisma', 'Bug', 'PostgreSQL'],
-      type: 'IMAGE',
-      ocrText: 'Prisma P1001: Can\'t reach database server at localhost:5432',
-      date: '22 Septembre 2026',
-    }
-  ];
+  private mockImages: ImageItem[] = [];
 
   constructor(private readonly supabaseService: SupabaseService) {}
 

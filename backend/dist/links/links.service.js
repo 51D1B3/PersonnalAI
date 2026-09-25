@@ -13,18 +13,7 @@ import { SupabaseService } from '../supabase/supabase.service.js';
 let LinksService = LinksService_1 = class LinksService {
     supabaseService;
     logger = new Logger(LinksService_1.name);
-    mockLinks = [
-        {
-            id: 'link-1',
-            name: 'Supabase Official Documentation',
-            url: 'https://supabase.com/docs',
-            description: 'Guide officiel Supabase pour la configuration de pgvector et RLS policies.',
-            category: 'Backend',
-            tags: ['Supabase', 'Cloud', 'Auth', 'pgvector'],
-            type: 'LINK',
-            date: '20 Septembre 2026',
-        }
-    ];
+    mockLinks = [];
     constructor(supabaseService) {
         this.supabaseService = supabaseService;
     }

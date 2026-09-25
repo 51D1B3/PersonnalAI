@@ -157,3 +157,67 @@ CREATE TRIGGER update_images_modtime BEFORE UPDATE ON public.images FOR EACH ROW
 CREATE TRIGGER update_videos_modtime BEFORE UPDATE ON public.videos FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
 CREATE TRIGGER update_links_modtime BEFORE UPDATE ON public.links FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
 CREATE TRIGGER update_notes_modtime BEFORE UPDATE ON public.notes FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
+
+-- 11. pgvector Vector Search RPC Functions (Étape 37 & 38)
+CREATE OR REPLACE FUNCTION match_documents (
+  query_embedding vector(1536),
+  match_threshold float DEFAULT 0.5,
+  match_count int DEFAULT 5
+)
+RETURNS TABLE (
+  id uuid,
+  title text,
+  description text,
+  category text,
+  file_type text,
+  similarity float
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT
+    documents.id,
+    documents.title,
+    documents.description,
+    documents.category,
+    documents.file_type,
+    1 - (documents.embedding <=> query_embedding) AS similarity
+  FROM public.documents
+  WHERE documents.embedding IS NOT NULL AND 1 - (documents.embedding <=> query_embedding) > match_threshold
+  ORDER BY documents.embedding <=> query_embedding
+  LIMIT match_count;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION match_all_resources (
+  query_embedding vector(1536),
+  match_threshold float DEFAULT 0.4,
+  match_count int DEFAULT 10
+)
+RETURNS TABLE (
+  id uuid,
+  title text,
+  description text,
+  category text,
+  tags text[],
+  type text,
+  similarity float
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT d.id, d.title, d.description, d.category, d.tags, d.file_type AS type, (1 - (d.embedding <=> query_embedding)) AS similarity
+  FROM public.documents d WHERE d.embedding IS NOT NULL AND (1 - (d.embedding <=> query_embedding)) > match_threshold
+  UNION ALL
+  SELECT i.id, i.title, i.description, i.category, i.tags, 'IMAGE' AS type, (1 - (i.embedding <=> query_embedding)) AS similarity
+  FROM public.images i WHERE i.embedding IS NOT NULL AND (1 - (i.embedding <=> query_embedding)) > match_threshold
+  UNION ALL
+  SELECT n.id, n.title, n.content AS description, n.category, n.tags, 'NOTE' AS type, (1 - (n.embedding <=> query_embedding)) AS similarity
+  FROM public.notes n WHERE n.embedding IS NOT NULL AND (1 - (n.embedding <=> query_embedding)) > match_threshold
+  ORDER BY similarity DESC
+  LIMIT match_count;
+END;
+$$;
+

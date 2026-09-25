@@ -18,19 +18,7 @@ export interface NoteItem {
 export class NotesService {
   private readonly logger = new Logger(NotesService.name);
 
-  private mockNotes: NoteItem[] = [
-    {
-      id: 'note-1',
-      title: 'Notes de Configuration Supabase & JWT Tokens',
-      description: 'Mémo pour la gestion des variables d\'environnement et des clés de rôles de service.',
-      content: 'SUPABASE_URL=https://my-project.supabase.co\nDATABASE_URL=postgresql://...',
-      category: 'Sécurité',
-      tags: ['Config', 'Env', 'Tokens'],
-      type: 'NOTE',
-      isVault: true,
-      date: '18 Septembre 2026',
-    }
-  ];
+  private mockNotes: NoteItem[] = [];
 
   constructor(private readonly supabaseService: SupabaseService) {}
 

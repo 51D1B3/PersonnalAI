@@ -15,4 +15,14 @@ export declare class AuthService {
         };
         token: string;
     }>;
+    logout(token?: string): Promise<{
+        success: boolean;
+        message: string;
+    }>;
+    getProfile(email?: string): Promise<{
+        email: string;
+        name: string;
+        role: string;
+        isAuthorized: boolean;
+    }>;
 }

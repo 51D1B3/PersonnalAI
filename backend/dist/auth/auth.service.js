@@ -25,7 +25,7 @@ let AuthService = AuthService_1 = class AuthService {
         const allowed = ALLOWED_EMAILS.find(u => u.email.toLowerCase() === email);
         if (!allowed) {
             this.logger.warn(`❌ Tentative d'accès non autorisée pour l'email: ${email}`);
-            throw new UnauthorizedException("❌ Accès refusé : Seules deux adresses email prédéfinies sont autorisées sur PersonalAI.");
+            throw new UnauthorizedException("❌ Accès refusé : Seules les adresses email prédéfinies propriétaires sont autorisées.");
         }
         const client = this.supabaseService.getClient();
         let supabaseUser = null;
@@ -39,10 +39,11 @@ let AuthService = AuthService_1 = class AuthService {
             }
         }
         catch {
-            this.logger.log(`Info: Connexion locale autorisée pour ${email}`);
+            this.logger.log(`Info: Session locale générée pour ${email}`);
         }
+        const token = `pai_sec_token_${Buffer.from(email).toString('base64')}`;
         return {
-            message: 'Authentification réussie',
+            message: 'Connexion réussie sur PersonalAI',
             user: {
                 email: allowed.email,
                 name: allowed.name,
@@ -50,7 +51,32 @@ let AuthService = AuthService_1 = class AuthService {
                 isAuthorized: true,
                 id: supabaseUser?.id || 'usr_local_sidibe',
             },
-            token: `pai_sec_token_${Buffer.from(email).toString('base64')}`,
+            token,
+        };
+    }
+    async logout(token) {
+        try {
+            const client = this.supabaseService.getClient();
+            await client.auth.signOut();
+        }
+        catch {
+        }
+        return { success: true, message: 'Déconnexion réussie.' };
+    }
+    async getProfile(email) {
+        if (!email) {
+            throw new UnauthorizedException('Session non valide');
+        }
+        const cleanEmail = email.trim().toLowerCase();
+        const allowed = ALLOWED_EMAILS.find(u => u.email.toLowerCase() === cleanEmail);
+        if (!allowed) {
+            throw new UnauthorizedException('Compte non autorisé.');
+        }
+        return {
+            email: allowed.email,
+            name: allowed.name,
+            role: allowed.role,
+            isAuthorized: true,
         };
     }
 };

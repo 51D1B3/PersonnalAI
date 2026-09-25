@@ -17,18 +17,7 @@ export interface LinkItem {
 export class LinksService {
   private readonly logger = new Logger(LinksService.name);
 
-  private mockLinks: LinkItem[] = [
-    {
-      id: 'link-1',
-      name: 'Supabase Official Documentation',
-      url: 'https://supabase.com/docs',
-      description: 'Guide officiel Supabase pour la configuration de pgvector et RLS policies.',
-      category: 'Backend',
-      tags: ['Supabase', 'Cloud', 'Auth', 'pgvector'],
-      type: 'LINK',
-      date: '20 Septembre 2026',
-    }
-  ];
+  private mockLinks: LinkItem[] = [];
 
   constructor(private readonly supabaseService: SupabaseService) {}
 

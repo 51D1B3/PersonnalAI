@@ -17,27 +17,47 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
 
-    setTimeout(() => {
-      const cleanEmail = email.trim().toLowerCase();
-      const matched = AUTHORIZED_EMAILS.find(item => item.email.toLowerCase() === cleanEmail);
+    const cleanEmail = email.trim().toLowerCase();
 
-      if (matched) {
-        onLoginSuccess({
-          email: matched.email,
-          name: matched.name,
-          role: matched.role,
-          isAuthorized: true
-        });
-      } else {
-        setError("❌ Accès refusé : Seules 2 adresses email prédéfinies sont autorisées à accéder à PersonalAI.");
-        setIsLoading(false);
+    // Check frontend / backend auth endpoint
+    try {
+      const response = await fetch('http://localhost:3000/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: cleanEmail, password }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        localStorage.setItem('personalai_session', JSON.stringify(data));
+        onLoginSuccess(data.user);
+        return;
       }
-    }, 600);
+    } catch {
+      // Local fallback checking authorized email rules
+    }
+
+    // Local client check fallback (Étape 19 & 20)
+    const matched = AUTHORIZED_EMAILS.find(item => item.email.toLowerCase() === cleanEmail);
+
+    if (matched) {
+      const userPayload: UserProfile = {
+        email: matched.email,
+        name: matched.name,
+        role: matched.role,
+        isAuthorized: true
+      };
+      localStorage.setItem('personalai_session', JSON.stringify({ user: userPayload }));
+      onLoginSuccess(userPayload);
+    } else {
+      setError("❌ Accès refusé : Seules deux adresses email prédéfinies sont autorisées à accéder à PersonalAI.");
+    }
+    setIsLoading(false);
   };
 
   const handleQuickSelect = (selectedEmail: string) => {
@@ -55,9 +75,11 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
       <div className="w-full max-w-md relative z-10">
         {/* Header Branding */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[#51D1B3] text-[#0B0F17] font-extrabold text-2xl mb-4 shadow-xl shadow-[#51D1B3]/25 animate-pulse">
-            PA
-          </div>
+          <img 
+            src="/logo.png" 
+            alt="PersonalAI Logo" 
+            className="w-20 h-20 object-contain mx-auto mb-4 drop-shadow-xl shadow-lg shadow-[#51D1B3]/25 rounded-2xl" 
+          />
           <h1 className="text-3xl font-extrabold text-white tracking-tight">
             Personal<span className="text-[#51D1B3]">AI</span>
           </h1>
@@ -69,7 +91,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
         {/* Login Card */}
         <div className="bg-[#151C28]/80 backdrop-blur-xl border border-[#222E42] rounded-3xl p-8 shadow-2xl shadow-black/50">
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#51D1B3]/10 border border-[#51D1B3]/20 text-[#51D1B3] text-xs font-semibold w-fit mb-6">
-            <ShieldCheck className="w-4 h-4" /> Accès Privé Sécurisé
+            <ShieldCheck className="w-4 h-4" /> Authentification Privée (2 Comptes)
           </div>
 
           {error && (
@@ -134,7 +156,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
           <div className="mt-8 pt-6 border-t border-[#222E42]">
             <p className="text-xs text-gray-400 mb-3 flex items-center gap-1.5 font-medium">
               <Sparkles className="w-3.5 h-3.5 text-[#51D1B3]" />
-              Comptes autorisés de test :
+              Comptes autorisés :
             </p>
             <div className="space-y-2">
               {AUTHORIZED_EMAILS.map((auth) => (

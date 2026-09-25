@@ -10,7 +10,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Get, Body, Headers, HttpCode, HttpStatus } from '@nestjs/common';
 import { AuthService } from './auth.service.js';
 import { LoginDto } from './dto/login.dto.js';
 let AuthController = class AuthController {
@@ -21,6 +21,12 @@ let AuthController = class AuthController {
     async login(loginDto) {
         return this.authService.login(loginDto);
     }
+    async logout(token) {
+        return this.authService.logout(token);
+    }
+    async getProfile(email) {
+        return this.authService.getProfile(email);
+    }
 };
 __decorate([
     Post('login'),
@@ -30,6 +36,21 @@ __decorate([
     __metadata("design:paramtypes", [LoginDto]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "login", null);
+__decorate([
+    Post('logout'),
+    HttpCode(HttpStatus.OK),
+    __param(0, Headers('authorization')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "logout", null);
+__decorate([
+    Get('me'),
+    __param(0, Headers('x-user-email')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "getProfile", null);
 AuthController = __decorate([
     Controller('auth'),
     __metadata("design:paramtypes", [AuthService])

@@ -13,26 +13,7 @@ import { SupabaseService } from '../supabase/supabase.service.js';
 let DocumentsService = DocumentsService_1 = class DocumentsService {
     supabaseService;
     logger = new Logger(DocumentsService_1.name);
-    mockDocuments = [
-        {
-            id: 'doc-1',
-            title: 'React Hooks & State Management Guide.pdf',
-            description: 'Cours complet sur useState, useEffect, et les hooks personnalisés avec exemples pratiques.',
-            category: 'Développement Web',
-            tags: ['React', 'JavaScript', 'Hooks'],
-            type: 'PDF',
-            date: '24 Septembre 2026',
-        },
-        {
-            id: 'doc-2',
-            title: 'Architecture Microservices NestJS.pdf',
-            description: 'Guide d\'implémentation d\'une architecture hexagonale et découplée avec NestJS.',
-            category: 'Backend',
-            tags: ['NestJS', 'TypeScript', 'Architecture'],
-            type: 'PDF',
-            date: '21 Septembre 2026',
-        }
-    ];
+    mockDocuments = [];
     constructor(supabaseService) {
         this.supabaseService = supabaseService;
     }

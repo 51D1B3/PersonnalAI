@@ -18,26 +18,7 @@ export interface DocumentItem {
 export class DocumentsService {
   private readonly logger = new Logger(DocumentsService.name);
 
-  private mockDocuments: DocumentItem[] = [
-    {
-      id: 'doc-1',
-      title: 'React Hooks & State Management Guide.pdf',
-      description: 'Cours complet sur useState, useEffect, et les hooks personnalisés avec exemples pratiques.',
-      category: 'Développement Web',
-      tags: ['React', 'JavaScript', 'Hooks'],
-      type: 'PDF',
-      date: '24 Septembre 2026',
-    },
-    {
-      id: 'doc-2',
-      title: 'Architecture Microservices NestJS.pdf',
-      description: 'Guide d\'implémentation d\'une architecture hexagonale et découplée avec NestJS.',
-      category: 'Backend',
-      tags: ['NestJS', 'TypeScript', 'Architecture'],
-      type: 'PDF',
-      date: '21 Septembre 2026',
-    }
-  ];
+  private mockDocuments: DocumentItem[] = [];
 
   constructor(private readonly supabaseService: SupabaseService) {}
 

@@ -16,17 +16,17 @@ export class AuthService {
   async login(loginDto: LoginDto) {
     const email = loginDto.email.trim().toLowerCase();
     
-    // 1. Verify strict authorized email policy (Cahier des charges: max 2 emails)
+    // 1. Étape 19 & 20 : Vérification stricte des 2 comptes autorisés (Bloquer toute autre adresse)
     const allowed = ALLOWED_EMAILS.find(u => u.email.toLowerCase() === email);
 
     if (!allowed) {
       this.logger.warn(`❌ Tentative d'accès non autorisée pour l'email: ${email}`);
       throw new UnauthorizedException(
-        "❌ Accès refusé : Seules deux adresses email prédéfinies sont autorisées sur PersonalAI."
+        "❌ Accès refusé : Seules les adresses email prédéfinies propriétaires sont autorisées."
       );
     }
 
-    // 2. Try Supabase Auth if credentials configured or return secure session token
+    // 2. Étape 21 : Connexion
     const client = this.supabaseService.getClient();
     let supabaseUser: { id: string } | null = null;
 
@@ -40,11 +40,13 @@ export class AuthService {
         supabaseUser = data.user;
       }
     } catch {
-      this.logger.log(`Info: Connexion locale autorisée pour ${email}`);
+      this.logger.log(`Info: Session locale générée pour ${email}`);
     }
 
+    const token = `pai_sec_token_${Buffer.from(email).toString('base64')}`;
+
     return {
-      message: 'Authentification réussie',
+      message: 'Connexion réussie sur PersonalAI',
       user: {
         email: allowed.email,
         name: allowed.name,
@@ -52,7 +54,38 @@ export class AuthService {
         isAuthorized: true,
         id: supabaseUser?.id || 'usr_local_sidibe',
       },
-      token: `pai_sec_token_${Buffer.from(email).toString('base64')}`,
+      token,
+    };
+  }
+
+  // Étape 22 : Déconnexion
+  async logout(token?: string) {
+    try {
+      const client = this.supabaseService.getClient();
+      await client.auth.signOut();
+    } catch {
+      // ignore
+    }
+    return { success: true, message: 'Déconnexion réussie.' };
+  }
+
+  // Étape 23 : Vérification Session / Protection
+  async getProfile(email?: string) {
+    if (!email) {
+      throw new UnauthorizedException('Session non valide');
+    }
+    const cleanEmail = email.trim().toLowerCase();
+    const allowed = ALLOWED_EMAILS.find(u => u.email.toLowerCase() === cleanEmail);
+
+    if (!allowed) {
+      throw new UnauthorizedException('Compte non autorisé.');
+    }
+
+    return {
+      email: allowed.email,
+      name: allowed.name,
+      role: allowed.role,
+      isAuthorized: true,
     };
   }
 }

@@ -12,17 +12,25 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 };
 import { Controller, Get, Post, Body } from '@nestjs/common';
 import { ImagesService } from './images.service.js';
+import { OcrService } from './ocr.service.js';
 import { CreateImageDto } from './dto/create-image.dto.js';
 let ImagesController = class ImagesController {
     imagesService;
-    constructor(imagesService) {
+    ocrService;
+    constructor(imagesService, ocrService) {
         this.imagesService = imagesService;
+        this.ocrService = ocrService;
     }
     async findAll() {
         return this.imagesService.findAll();
     }
     async create(createImageDto) {
         return this.imagesService.create(createImageDto);
+    }
+    async scanOcr(body) {
+        const title = body.title || 'Capture Erreur Prisma P1001.png';
+        const imagePath = body.imagePath || '/uploads/sample.png';
+        return this.ocrService.processImageOcr(imagePath, title);
     }
 };
 __decorate([
@@ -38,9 +46,17 @@ __decorate([
     __metadata("design:paramtypes", [CreateImageDto]),
     __metadata("design:returntype", Promise)
 ], ImagesController.prototype, "create", null);
+__decorate([
+    Post('scan-ocr'),
+    __param(0, Body()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], ImagesController.prototype, "scanOcr", null);
 ImagesController = __decorate([
     Controller('images'),
-    __metadata("design:paramtypes", [ImagesService])
+    __metadata("design:paramtypes", [ImagesService,
+        OcrService])
 ], ImagesController);
 export { ImagesController };
 //# sourceMappingURL=images.controller.js.map
