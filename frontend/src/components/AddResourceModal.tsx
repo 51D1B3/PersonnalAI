@@ -6,17 +6,17 @@ interface AddResourceModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAddResource: (resource: ResourceItem) => void;
+  userEmail?: string;
 }
 
 export const AddResourceModal: React.FC<AddResourceModalProps> = ({
   isOpen,
   onClose,
-  onAddResource
+  onAddResource,
+  userEmail = 'mahamadousidibe2004@gmail.com',
 }) => {
   const [title, setTitle] = useState('');
   const [type, setType] = useState<ResourceType>('PDF');
-  const [category, setCategory] = useState('Développement Web');
-  const [tagsInput, setTagsInput] = useState('');
   const [description, setDescription] = useState('');
   const [urlInput, setUrlInput] = useState('');
   const [noteContent, setNoteContent] = useState('');
@@ -46,10 +46,12 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
 
     const finalTitle = title.trim() || (selectedFile ? selectedFile.name : (urlInput.trim() || 'Ressource Sans Titre'));
     const finalDescription = description.trim() || (type === 'NOTE' ? noteContent.trim() : (type === 'LINK' ? urlInput.trim() : `Ressource ${type} ajoutée`));
-    const tags = tagsInput.split(',').map(t => t.trim()).filter(t => t.length > 0);
-    const finalCategory = category.trim() || 'Général';
+    const finalCategory = type === 'PDF' ? 'Document' : type === 'IMAGE' ? 'Image' : type === 'VIDEO' ? 'Vidéo' : type === 'LINK' ? 'Lien' : 'Note';
 
-    // 1. Try backend upload endpoint if file attached
+    let backendId: string | null = null;
+    let backendUrl: string | null = null;
+
+    // 1. Send file to backend upload endpoint if file attached
     if (selectedFile) {
       try {
         const formData = new FormData();
@@ -57,89 +59,92 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
         formData.append('title', finalTitle);
         formData.append('description', finalDescription);
         formData.append('category', finalCategory);
-        formData.append('tags', tagsInput);
+        formData.append('tags', type);
 
         const res = await fetch('http://localhost:3000/upload', {
           method: 'POST',
+          headers: { 'x-user-email': userEmail },
           body: formData,
         });
 
         if (res.ok) {
           const result = await res.json();
-          onAddResource({
-            id: result.id || Date.now().toString(),
-            title: finalTitle,
-            type,
-            category: finalCategory,
-            tags: tags.length > 0 ? tags : [type],
-            description: finalDescription,
-            date: 'Aujourd\'hui',
-            fileSize: `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB`,
-            ocrText: type === 'IMAGE' ? 'Analyse OCR Tesseract générée...' : undefined,
-            transcript: type === 'VIDEO' ? 'Transcription Whisper automatique...' : undefined,
-          });
-          setIsUploading(false);
-          resetAndClose();
-          return;
+          backendId = result.id;
+          backendUrl = result.filePath;
         }
       } catch {
-        // Fallback local addition if backend endpoint starting
+        // Fallback local persistence
       }
     }
 
-    // 2. Direct creation for Link, Note, or file without backend
-    const newResource: ResourceItem = {
-      id: Date.now().toString(),
-      title: finalTitle,
-      type,
-      category: finalCategory,
-      tags: tags.length > 0 ? tags : [type],
-      description: finalDescription,
-      url: type === 'LINK' ? (urlInput.trim() || 'https://') : undefined,
-      ocrText: type === 'IMAGE' ? 'Texte extrait automatiquement via Tesseract OCR' : undefined,
-      transcript: type === 'VIDEO' ? 'Transcription automatique de l\'audio via OpenAI Whisper' : undefined,
-      date: 'Aujourd\'hui',
-      fileSize: selectedFile ? `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB` : undefined
-    };
-
-    // If type is LINK, try backend POST /links
+    // 2. Send link to backend
     if (type === 'LINK') {
       try {
-        await fetch('http://localhost:3000/links', {
+        const res = await fetch('http://localhost:3000/links', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'x-user-email': userEmail,
+          },
           body: JSON.stringify({
             name: finalTitle,
             url: urlInput.trim() || 'https://supabase.com',
             description: finalDescription,
             category: finalCategory,
-            tags,
+            tags: [type],
           }),
         });
+        if (res.ok) {
+          const data = await res.json();
+          backendId = data.id;
+        }
       } catch {
-        // Continue
+        // Fallback
       }
     }
 
-    // If type is NOTE, try backend POST /notes
+    // 3. Send note to backend
     if (type === 'NOTE') {
       try {
-        await fetch('http://localhost:3000/notes', {
+        const res = await fetch('http://localhost:3000/notes', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'x-user-email': userEmail,
+          },
           body: JSON.stringify({
             title: finalTitle,
             content: noteContent.trim() || finalDescription,
             category: finalCategory,
-            tags,
+            tags: [type],
           }),
         });
+        if (res.ok) {
+          const data = await res.json();
+          backendId = data.id;
+        }
       } catch {
-        // Continue
+        // Fallback
       }
     }
 
-    onAddResource(newResource);
+    // 4. Construct persistent ResourceItem object
+    const createdResource: ResourceItem = {
+      id: backendId || `res-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      title: finalTitle,
+      type,
+      category: finalCategory,
+      tags: [type],
+      description: finalDescription,
+      url: backendUrl || (type === 'LINK' ? (urlInput.trim() || 'https://') : (selectedFile ? `/uploads/${selectedFile.name}` : undefined)),
+      ocrText: type === 'IMAGE' ? 'Texte de la capture' : undefined,
+      transcript: type === 'VIDEO' ? 'Transcription vidéo' : undefined,
+      noteContent: type === 'NOTE' ? (noteContent.trim() || finalDescription) : undefined,
+      date: new Date().toLocaleDateString('fr-FR'),
+      fileSize: selectedFile ? `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB` : undefined,
+    };
+
+    onAddResource(createdResource);
     setIsUploading(false);
     resetAndClose();
   };
@@ -147,8 +152,6 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
   const resetAndClose = () => {
     setTitle('');
     setType('PDF');
-    setCategory('Développement Web');
-    setTagsInput('');
     setDescription('');
     setUrlInput('');
     setNoteContent('');
@@ -168,7 +171,6 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
             </div>
             <div>
               <h3 className="text-lg font-bold text-white">Ajouter une ressource</h3>
-              <p className="text-xs text-gray-400">PDF, Image (OCR), Vidéo (Whisper), Lien ou Note</p>
             </div>
           </div>
           <button
@@ -248,7 +250,7 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
           {(type === 'PDF' || type === 'IMAGE' || type === 'VIDEO') && (
             <div>
               <label className="block text-xs font-semibold text-gray-300 mb-1.5">
-                Sélectionner le fichier ({type})
+                Sélectionner le fichier ({type === 'PDF' ? 'PDF' : type === 'IMAGE' ? 'Image' : 'Vidéo'})
               </label>
               <div className="relative border-2 border-dashed border-[#222E42] hover:border-[#51D1B3]/50 rounded-2xl p-4 text-center transition-all bg-[#0B0F17]/50">
                 <input
@@ -289,7 +291,7 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
                 required
                 value={urlInput}
                 onChange={(e) => setUrlInput(e.target.value)}
-                placeholder="https://supabase.com/docs"
+                placeholder="https://example.com"
                 className="w-full bg-[#0B0F17] border border-[#222E42] rounded-xl px-4 py-2.5 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-[#51D1B3]"
               />
             </div>
@@ -305,50 +307,22 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
               required
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Ex: React Hooks Guide, Capture Prisma, Note JWT..."
+              placeholder="Saisissez le titre de la ressource..."
               className="w-full bg-[#0B0F17] border border-[#222E42] rounded-xl px-4 py-2.5 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-[#51D1B3]"
             />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-gray-300 mb-1.5">
-                Catégorie
-              </label>
-              <input
-                type="text"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                placeholder="Ex: Développement Web, Database"
-                className="w-full bg-[#0B0F17] border border-[#222E42] rounded-xl px-3 py-2.5 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-[#51D1B3]"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-gray-300 mb-1.5">
-                Tags (séparés par des virgules)
-              </label>
-              <input
-                type="text"
-                value={tagsInput}
-                onChange={(e) => setTagsInput(e.target.value)}
-                placeholder="React, Hooks, NestJS"
-                className="w-full bg-[#0B0F17] border border-[#222E42] rounded-xl px-3 py-2.5 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-[#51D1B3]"
-              />
-            </div>
           </div>
 
           {/* Conditional Note Content Text Area for NOTE */}
           {type === 'NOTE' && (
             <div>
               <label className="block text-xs font-semibold text-gray-300 mb-1.5">
-                Contenu de la note confidentielle
+                Contenu de la note
               </label>
               <textarea
                 rows={3}
                 value={noteContent}
                 onChange={(e) => setNoteContent(e.target.value)}
-                placeholder="Saisissez vos clés de configuration, mémo ou notes personnelles..."
+                placeholder="Saisissez votre note..."
                 className="w-full bg-[#0B0F17] border border-[#222E42] rounded-xl px-4 py-2.5 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-[#51D1B3] font-mono"
               />
             </div>
@@ -363,7 +337,7 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
               rows={2}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Description courte du contenu pour l'indexation..."
+              placeholder="Description courte du contenu..."
               className="w-full bg-[#0B0F17] border border-[#222E42] rounded-xl px-4 py-2.5 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-[#51D1B3] resize-none"
             />
           </div>
@@ -373,7 +347,7 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
             <button
               type="button"
               onClick={resetAndClose}
-              className="px-4 py-2.5 rounded-xl bg-[#0B0F17] text-gray-400 text-xs font-semibold hover:text-white border border-[#222E42] transition-colors cursor-pointer"
+              className="px-4 py-2.5 rounded-xl bg-[#0B0F17] text-[#51D1B3] text-xs font-semibold border border-[#222E42] transition-colors cursor-pointer"
             >
               Annuler
             </button>
@@ -386,7 +360,7 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
                 <div className="w-4 h-4 border-2 border-[#0B0F17] border-t-transparent rounded-full animate-spin" />
               ) : (
                 <>
-                  <Plus className="w-4 h-4" /> Enregistrer & Uploader
+                  <Plus className="w-4 h-4" /> Enregistrer & Persister
                 </>
               )}
             </button>
@@ -396,3 +370,4 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
     </div>
   );
 };
+

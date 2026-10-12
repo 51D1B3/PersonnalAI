@@ -33,6 +33,10 @@ let AiController = class AiController {
             sampleDimensions: vector.slice(0, 5),
         };
     }
+    async askRag(question, documents) {
+        const query = question || 'De quoi parlent mes documents ?';
+        return this.embeddingService.askRag(query, documents || []);
+    }
 };
 __decorate([
     Get('status'),
@@ -54,6 +58,14 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], AiController.prototype, "generateEmbedding", null);
+__decorate([
+    Post('rag'),
+    __param(0, Body('question')),
+    __param(1, Body('documents')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Array]),
+    __metadata("design:returntype", Promise)
+], AiController.prototype, "askRag", null);
 AiController = __decorate([
     Controller('ai'),
     __metadata("design:paramtypes", [EmbeddingService])

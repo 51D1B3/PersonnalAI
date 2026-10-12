@@ -15,11 +15,20 @@ let SupabaseService = SupabaseService_1 = class SupabaseService {
     client;
     constructor() {
         const supabaseUrl = process.env.SUPABASE_URL || '';
-        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || '';
+        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY ||
+            process.env.SUPABASE_PUBLISHABLE_KEY ||
+            process.env.SUPABASE_ANON_KEY ||
+            '';
         if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('your-supabase-project')) {
             this.logger.warn('⚠️ Supabase credentials are missing or unconfigured in backend/.env!');
         }
-        this.client = createClient(supabaseUrl, supabaseKey);
+        this.client = createClient(supabaseUrl, supabaseKey, {
+            auth: {
+                autoRefreshToken: false,
+                persistSession: false,
+                detectSessionInUrl: false,
+            },
+        });
     }
     getClient() {
         return this.client;

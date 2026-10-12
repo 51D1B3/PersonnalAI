@@ -5,7 +5,7 @@ import { EmbeddingService } from './embedding.service.js';
 export class AiController {
   constructor(private readonly embeddingService: EmbeddingService) {}
 
-  // Étape 31, 32, 34 : Status et détection Ollama local & modèle embedding
+  // Étape 31, 32, 34 : Status et détection Ollama local & microservice IA
   @Get('status')
   async getStatus() {
     return this.embeddingService.checkOllamaStatus();
@@ -28,5 +28,15 @@ export class AiController {
       vectorLength: vector.length,
       sampleDimensions: vector.slice(0, 5),
     };
+  }
+
+  // Moteur RAG : Question/réponse augmentée par les documents
+  @Post('rag')
+  async askRag(
+    @Body('question') question: string,
+    @Body('documents') documents: any[]
+  ) {
+    const query = question || 'De quoi parlent mes documents ?';
+    return this.embeddingService.askRag(query, documents || []);
   }
 }

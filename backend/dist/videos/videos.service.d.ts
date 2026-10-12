@@ -16,5 +16,10 @@ export declare class VideosService {
     private mockVideos;
     constructor(supabaseService: SupabaseService);
     findAll(): Promise<VideoItem[]>;
+    searchVideos(query: string): Promise<VideoItem[]>;
     create(body: any): Promise<VideoItem>;
+    remove(id: string): Promise<{
+        success: boolean;
+        id: string;
+    }>;
 }

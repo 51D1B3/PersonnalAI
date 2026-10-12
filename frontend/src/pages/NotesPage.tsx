@@ -1,15 +1,33 @@
 import React, { useState } from 'react';
-import { StickyNote, Lock, Plus, ShieldCheck, FileEdit, Trash2 } from 'lucide-react';
-import type { ResourceItem } from '../types';
+import { StickyNote, Plus, ShieldCheck } from 'lucide-react';
+import type { ResourceItem, UserProfile } from '../types';
+import { isOwnerEmail } from '../types';
+import { ResourceActionMenu } from '../components/ResourceActionMenu';
 
 interface NotesPageProps {
   resources: ResourceItem[];
+  user?: UserProfile | null;
   onAddClick: () => void;
+  onOpenResource: (resource: ResourceItem) => void;
+  onDownloadResource: (resource: ResourceItem) => void;
+  onEditResource: (resource: ResourceItem) => void;
+  onDeleteResource: (resource: ResourceItem) => void;
 }
 
-export const NotesPage: React.FC<NotesPageProps> = ({ resources, onAddClick }) => {
-  const noteResources = resources.filter(r => r.type === 'NOTE');
-  const [selectedNote, setSelectedNote] = useState<ResourceItem | null>(noteResources[0] || null);
+export const NotesPage: React.FC<NotesPageProps> = ({
+  resources,
+  user,
+  onAddClick,
+  onOpenResource,
+  onDownloadResource,
+  onEditResource,
+  onDeleteResource,
+}) => {
+  const canAdd = isOwnerEmail(user?.email);
+  const noteResources = resources.filter((r) => r.type === 'NOTE');
+  const [selectedNote, setSelectedNote] = useState<ResourceItem | null>(
+    noteResources[0] || null
+  );
 
   return (
     <div className="flex-1 overflow-y-auto p-6 lg:p-8 space-y-6">
@@ -27,20 +45,14 @@ export const NotesPage: React.FC<NotesPageProps> = ({ resources, onAddClick }) =
           </div>
         </div>
 
-        <button
-          onClick={onAddClick}
-          className="px-4 py-2.5 rounded-xl bg-[#51D1B3] text-[#0B0F17] font-bold text-xs hover:bg-[#3EB89B] transition-all shadow-md shadow-[#51D1B3]/20 flex items-center gap-2 cursor-pointer w-fit"
-        >
-          <Plus className="w-4 h-4" /> Nouvelle note
-        </button>
-      </div>
-
-      {/* Security Vault Indicator */}
-      <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-200 text-xs flex items-center gap-3">
-        <Lock className="w-4 h-4 text-amber-400 shrink-0" />
-        <span>
-          <strong>Stockage Chiffré :</strong> Pour vos clés de configuration et tokens, un coffre-fort chiffré côté backend garantit une confidentialité absolue.
-        </span>
+        {canAdd && (
+          <button
+            onClick={onAddClick}
+            className="px-4 py-2.5 rounded-xl bg-[#51D1B3] text-[#0B0F17] font-bold text-xs hover:bg-[#3EB89B] transition-all shadow-md shadow-[#51D1B3]/20 flex items-center gap-2 cursor-pointer w-fit"
+          >
+            <Plus className="w-4 h-4" /> Nouvelle note
+          </button>
+        )}
       </div>
 
       {/* Split Pane: Notes List & Note Details */}
@@ -51,15 +63,17 @@ export const NotesPage: React.FC<NotesPageProps> = ({ resources, onAddClick }) =
           </div>
           <h3 className="text-base font-bold text-white">Aucune note privée</h3>
           <p className="text-xs text-gray-400 max-w-md mx-auto">
-            Votre coffre-fort de notes est vide. Créez vos premiers mémos techniques ou notes confidentielles chiffrées.
+            Votre coffre-fort de notes est vide.
           </p>
-          <button
-            onClick={onAddClick}
-            className="px-5 py-2.5 rounded-xl bg-[#51D1B3] text-[#0B0F17] font-bold text-xs hover:bg-[#3EB89B] transition-all inline-flex items-center gap-2 cursor-pointer shadow-md shadow-[#51D1B3]/20"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Nouvelle note</span>
-          </button>
+          {canAdd && (
+            <button
+              onClick={onAddClick}
+              className="px-5 py-2.5 rounded-xl bg-[#51D1B3] text-[#0B0F17] font-bold text-xs hover:bg-[#3EB89B] transition-all inline-flex items-center gap-2 cursor-pointer shadow-md shadow-[#51D1B3]/20"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Nouvelle note</span>
+            </button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-[400px]">
@@ -72,24 +86,40 @@ export const NotesPage: React.FC<NotesPageProps> = ({ resources, onAddClick }) =
               <div
                 key={note.id}
                 onClick={() => setSelectedNote(note)}
-                className={`p-4 rounded-2xl border transition-all cursor-pointer ${
+                className={`p-4 rounded-2xl border transition-all cursor-pointer relative ${
                   selectedNote?.id === note.id
                     ? 'bg-[#51D1B3]/15 border-[#51D1B3] shadow-md shadow-[#51D1B3]/10'
                     : 'bg-[#151C28] border-[#222E42] hover:border-gray-600'
                 }`}
               >
                 <div className="flex items-center justify-between gap-2 mb-1">
-                  <h4 className={`text-sm font-bold truncate ${selectedNote?.id === note.id ? 'text-[#51D1B3]' : 'text-white'}`}>
+                  <h4
+                    className={`text-sm font-bold truncate ${
+                      selectedNote?.id === note.id ? 'text-[#51D1B3]' : 'text-white'
+                    }`}
+                  >
                     {note.title}
                   </h4>
-                  <span className="text-[10px] text-gray-400 shrink-0">{note.date}</span>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className="text-[10px] text-gray-400">{note.date}</span>
+                    <ResourceActionMenu
+                      resource={note}
+                      onOpen={onOpenResource}
+                      onDownload={onDownloadResource}
+                      onEdit={onEditResource}
+                      onDelete={onDeleteResource}
+                    />
+                  </div>
                 </div>
                 <p className="text-xs text-gray-400 line-clamp-2 mb-2">
                   {note.description}
                 </p>
                 <div className="flex items-center gap-1.5 flex-wrap">
                   {note.tags.map((t, idx) => (
-                    <span key={idx} className="text-[10px] px-2 py-0.5 rounded bg-[#0B0F17] text-gray-400 border border-[#222E42]">
+                    <span
+                      key={idx}
+                      className="text-[10px] px-2 py-0.5 rounded bg-[#0B0F17] text-gray-400 border border-[#222E42]"
+                    >
                       #{t}
                     </span>
                   ))}
@@ -108,33 +138,28 @@ export const NotesPage: React.FC<NotesPageProps> = ({ resources, onAddClick }) =
                       {selectedNote.title}
                     </h3>
                     <div className="flex items-center gap-2 text-xs text-gray-400">
-                      <span>Catégorie: <strong className="text-gray-300 font-semibold">{selectedNote.category}</strong></span>
-                      <span>•</span>
                       <span className="text-[#51D1B3] flex items-center gap-1">
                         <ShieldCheck className="w-3 h-3" /> Privé
                       </span>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <button className="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-[#0B0F17]" title="Éditer">
-                      <FileEdit className="w-4 h-4" />
-                    </button>
-                    <button className="p-2 text-gray-400 hover:text-red-400 rounded-lg hover:bg-[#0B0F17]" title="Supprimer">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
+                  <ResourceActionMenu
+                    resource={selectedNote}
+                    onOpen={onOpenResource}
+                    onDownload={onDownloadResource}
+                    onEdit={onEditResource}
+                    onDelete={onDeleteResource}
+                  />
                 </div>
 
                 {/* Note Content Display */}
                 <div className="prose prose-invert max-w-none text-xs sm:text-sm text-gray-300 space-y-4">
-                  <p className="leading-relaxed">
-                    {selectedNote.description}
-                  </p>
+                  <p className="leading-relaxed">{selectedNote.description}</p>
 
                   <div className="p-4 rounded-2xl bg-[#0B0F17] border border-[#222E42] font-mono text-xs text-gray-300 space-y-1">
                     <p className="text-amber-400 font-bold">// Contenu de la note :</p>
-                    <p>{selectedNote.description}</p>
+                    <p>{selectedNote.noteContent || selectedNote.description}</p>
                   </div>
                 </div>
               </div>
@@ -147,7 +172,7 @@ export const NotesPage: React.FC<NotesPageProps> = ({ resources, onAddClick }) =
             {selectedNote && (
               <div className="pt-4 mt-6 border-t border-[#222E42] flex items-center justify-between text-xs text-gray-400">
                 <span>Modifié le {selectedNote.date}</span>
-                <span className="text-[#51D1B3] font-semibold">Chiffrement AES-256</span>
+                <span className="text-[#51D1B3] font-semibold">Stockage Privé</span>
               </div>
             )}
           </div>
@@ -156,3 +181,4 @@ export const NotesPage: React.FC<NotesPageProps> = ({ resources, onAddClick }) =
     </div>
   );
 };
+

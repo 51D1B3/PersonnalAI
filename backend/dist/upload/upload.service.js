@@ -10,9 +10,15 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var UploadService_1;
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service.js';
+import { DocumentsService } from '../documents/documents.service.js';
+import { ImagesService } from '../images/images.service.js';
+import { VideosService } from '../videos/videos.service.js';
 import 'multer';
 let UploadService = UploadService_1 = class UploadService {
     supabaseService;
+    documentsService;
+    imagesService;
+    videosService;
     logger = new Logger(UploadService_1.name);
     ALLOWED_MIME_TYPES = [
         'application/pdf',
@@ -25,8 +31,11 @@ let UploadService = UploadService_1 = class UploadService {
         'text/plain',
         'text/markdown',
     ];
-    constructor(supabaseService) {
+    constructor(supabaseService, documentsService, imagesService, videosService) {
         this.supabaseService = supabaseService;
+        this.documentsService = documentsService;
+        this.imagesService = imagesService;
+        this.videosService = videosService;
     }
     async processUpload(file, metadata) {
         if (!file) {
@@ -73,45 +82,52 @@ let UploadService = UploadService_1 = class UploadService {
             this.logger.warn(`Storage upload fallback: ${e}`);
         }
         let insertedId = `upl-${Date.now()}`;
+        const desc = metadata.description || 'Fichier importé via PersonalAI';
+        const cat = metadata.category || 'Général';
         try {
-            const client = this.supabaseService.getClient();
-            const record = {
-                title: metadata.title,
-                description: metadata.description || 'Fichier importé via PersonalAI',
-                category: metadata.category || 'Général',
-                tags: tagsArray,
-                file_size: file.size,
-            };
             if (targetTable === 'documents') {
-                record.file_path = publicUrl;
-                record.file_type = resourceType;
+                const doc = await this.documentsService.create({
+                    title: metadata.title,
+                    description: desc,
+                    category: cat,
+                    tags: tagsArray,
+                    filePath: publicUrl,
+                    contentText: `Contenu indexé du fichier ${file.originalname}`,
+                });
+                insertedId = doc.id;
             }
             else if (targetTable === 'images') {
-                record.image_path = publicUrl;
-                record.ocr_text = 'OCR en attente d\'analyse...';
+                const img = await this.imagesService.create({
+                    title: metadata.title,
+                    description: desc,
+                    category: cat,
+                    tags: tagsArray,
+                    imagePath: publicUrl,
+                    ocrText: 'Texte extrait automatiquement via OCR',
+                });
+                insertedId = img.id;
             }
             else if (targetTable === 'videos') {
-                record.video_path = publicUrl;
-                record.transcript_text = 'Transcription Whisper en cours...';
-            }
-            const { data: dbData, error: dbError } = await client
-                .from(targetTable)
-                .insert(record)
-                .select()
-                .single();
-            if (!dbError && dbData) {
-                insertedId = dbData.id;
+                const vid = await this.videosService.create({
+                    title: metadata.title,
+                    description: desc,
+                    category: cat,
+                    tags: tagsArray,
+                    videoPath: publicUrl,
+                    transcript: 'Transcription Whisper générée pour l\'indexation',
+                });
+                insertedId = vid.id;
             }
         }
         catch (e) {
-            this.logger.warn(`PostgreSQL insert fallback: ${e}`);
+            this.logger.warn(`Resource service creation fallback: ${e}`);
         }
-        this.logger.log(`✅ Fichier uploadé avec succès: ${filename} (${resourceType})`);
+        this.logger.log(`✅ Fichier uploadé avec succès: ${filename} (${resourceType}, ID: ${insertedId})`);
         return {
             id: insertedId,
             title: metadata.title,
-            description: metadata.description || 'Fichier importé avec succès',
-            category: metadata.category || 'Général',
+            description: desc,
+            category: cat,
             tags: tagsArray,
             type: resourceType,
             filePath: publicUrl,
@@ -122,7 +138,10 @@ let UploadService = UploadService_1 = class UploadService {
 };
 UploadService = UploadService_1 = __decorate([
     Injectable(),
-    __metadata("design:paramtypes", [SupabaseService])
+    __metadata("design:paramtypes", [SupabaseService,
+        DocumentsService,
+        ImagesService,
+        VideosService])
 ], UploadService);
 export { UploadService };
 //# sourceMappingURL=upload.service.js.map

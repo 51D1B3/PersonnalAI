@@ -18,6 +18,7 @@ export interface ImageItem {
 export class ImagesService {
   private readonly logger = new Logger(ImagesService.name);
 
+  // Reinitialisé à 0
   private mockImages: ImageItem[] = [];
 
   constructor(private readonly supabaseService: SupabaseService) {}
@@ -25,7 +26,7 @@ export class ImagesService {
   async findAll(): Promise<ImageItem[]> {
     try {
       const client = this.supabaseService.getClient();
-      const { data, error } = await client.from('images').select('*');
+      const { data, error } = await client.from('images').select('*').order('created_at', { ascending: false });
 
       if (!error && data && data.length > 0) {
         return data.map((img: any) => ({
@@ -35,7 +36,7 @@ export class ImagesService {
           category: img.category || 'Général',
           tags: img.tags || [],
           type: 'IMAGE',
-          date: new Date(img.created_at).toLocaleDateString('fr-FR'),
+          date: new Date(img.created_at || Date.now()).toLocaleDateString('fr-FR'),
           imagePath: img.image_path,
           ocrText: img.ocr_text,
         }));
@@ -80,5 +81,17 @@ export class ImagesService {
 
     this.mockImages.unshift(newImg);
     return newImg;
+  }
+
+  async remove(id: string): Promise<{ success: boolean; id: string }> {
+    try {
+      const client = this.supabaseService.getClient();
+      await client.from('images').delete().eq('id', id);
+    } catch (e) {
+      this.logger.warn(`Erreur suppression image Supabase: ${e}`);
+    }
+
+    this.mockImages = this.mockImages.filter((img) => img.id !== id);
+    return { success: true, id };
   }
 }

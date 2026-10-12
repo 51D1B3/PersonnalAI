@@ -10,38 +10,61 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-import { Controller, Post, Get, Body, Headers, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Get, Body, Headers, HttpCode, HttpStatus, Req, UnauthorizedException, } from '@nestjs/common';
 import { AuthService } from './auth.service.js';
 import { LoginDto } from './dto/login.dto.js';
+import { SupabaseService } from '../supabase/supabase.service.js';
 let AuthController = class AuthController {
     authService;
-    constructor(authService) {
+    supabaseService;
+    constructor(authService, supabaseService) {
         this.authService = authService;
+        this.supabaseService = supabaseService;
     }
-    async login(loginDto) {
-        return this.authService.login(loginDto);
+    async verifyUser(authorization, req) {
+        if (!authorization) {
+            throw new UnauthorizedException('Token manquant');
+        }
+        const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || '127.0.0.1';
+        const userAgent = req.headers['user-agent'] || 'Browser';
+        return this.authService.verifyUser(authorization, ip, userAgent);
     }
-    async logout(token) {
-        return this.authService.logout(token);
+    async login(loginDto, req) {
+        const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || '127.0.0.1';
+        const userAgent = req.headers['user-agent'] || 'Browser';
+        return this.authService.login(loginDto, ip, userAgent);
+    }
+    async logout(token, email) {
+        return this.authService.logout(token, email);
     }
     async getProfile(email) {
         return this.authService.getProfile(email);
     }
 };
 __decorate([
+    Get('verify'),
+    __param(0, Headers('authorization')),
+    __param(1, Req()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "verifyUser", null);
+__decorate([
     Post('login'),
     HttpCode(HttpStatus.OK),
     __param(0, Body()),
+    __param(1, Req()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [LoginDto]),
+    __metadata("design:paramtypes", [LoginDto, Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "login", null);
 __decorate([
     Post('logout'),
     HttpCode(HttpStatus.OK),
     __param(0, Headers('authorization')),
+    __param(1, Headers('x-user-email')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "logout", null);
 __decorate([
@@ -53,7 +76,8 @@ __decorate([
 ], AuthController.prototype, "getProfile", null);
 AuthController = __decorate([
     Controller('auth'),
-    __metadata("design:paramtypes", [AuthService])
+    __metadata("design:paramtypes", [AuthService,
+        SupabaseService])
 ], AuthController);
 export { AuthController };
 //# sourceMappingURL=auth.controller.js.map

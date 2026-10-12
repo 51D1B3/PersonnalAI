@@ -17,6 +17,7 @@ export interface LinkItem {
 export class LinksService {
   private readonly logger = new Logger(LinksService.name);
 
+  // Reinitialisé à 0
   private mockLinks: LinkItem[] = [];
 
   constructor(private readonly supabaseService: SupabaseService) {}
@@ -24,7 +25,7 @@ export class LinksService {
   async findAll(): Promise<LinkItem[]> {
     try {
       const client = this.supabaseService.getClient();
-      const { data, error } = await client.from('links').select('*');
+      const { data, error } = await client.from('links').select('*').order('created_at', { ascending: false });
 
       if (!error && data && data.length > 0) {
         return data.map((l: any) => ({
@@ -35,7 +36,7 @@ export class LinksService {
           category: l.category || 'Général',
           tags: l.tags || [],
           type: 'LINK',
-          date: new Date(l.created_at).toLocaleDateString('fr-FR'),
+          date: new Date(l.created_at || Date.now()).toLocaleDateString('fr-FR'),
         }));
       }
     } catch (e) {
@@ -76,5 +77,17 @@ export class LinksService {
 
     this.mockLinks.unshift(newLink);
     return newLink;
+  }
+
+  async remove(id: string): Promise<{ success: boolean; id: string }> {
+    try {
+      const client = this.supabaseService.getClient();
+      await client.from('links').delete().eq('id', id);
+    } catch (e) {
+      this.logger.warn(`Erreur suppression link Supabase: ${e}`);
+    }
+
+    this.mockLinks = this.mockLinks.filter((l) => l.id !== id);
+    return { success: true, id };
   }
 }

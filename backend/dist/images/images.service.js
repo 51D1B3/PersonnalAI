@@ -20,7 +20,7 @@ let ImagesService = ImagesService_1 = class ImagesService {
     async findAll() {
         try {
             const client = this.supabaseService.getClient();
-            const { data, error } = await client.from('images').select('*');
+            const { data, error } = await client.from('images').select('*').order('created_at', { ascending: false });
             if (!error && data && data.length > 0) {
                 return data.map((img) => ({
                     id: img.id,
@@ -29,7 +29,7 @@ let ImagesService = ImagesService_1 = class ImagesService {
                     category: img.category || 'Général',
                     tags: img.tags || [],
                     type: 'IMAGE',
-                    date: new Date(img.created_at).toLocaleDateString('fr-FR'),
+                    date: new Date(img.created_at || Date.now()).toLocaleDateString('fr-FR'),
                     imagePath: img.image_path,
                     ocrText: img.ocr_text,
                 }));
@@ -71,6 +71,17 @@ let ImagesService = ImagesService_1 = class ImagesService {
         }
         this.mockImages.unshift(newImg);
         return newImg;
+    }
+    async remove(id) {
+        try {
+            const client = this.supabaseService.getClient();
+            await client.from('images').delete().eq('id', id);
+        }
+        catch (e) {
+            this.logger.warn(`Erreur suppression image Supabase: ${e}`);
+        }
+        this.mockImages = this.mockImages.filter((img) => img.id !== id);
+        return { success: true, id };
     }
 };
 ImagesService = ImagesService_1 = __decorate([

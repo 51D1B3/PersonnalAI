@@ -18,4 +18,8 @@ export declare class ImagesService {
     constructor(supabaseService: SupabaseService);
     findAll(): Promise<ImageItem[]>;
     create(createImageDto: CreateImageDto): Promise<ImageItem>;
+    remove(id: string): Promise<{
+        success: boolean;
+        id: string;
+    }>;
 }

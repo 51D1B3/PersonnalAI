@@ -1,20 +1,37 @@
 import React, { useState } from 'react';
-import { FileText, Upload, Download, Tag, Search, CheckCircle2, FileCode, ExternalLink } from 'lucide-react';
-import type { ResourceItem } from '../types';
+import { FileText, Plus, Tag, Search } from 'lucide-react';
+import type { ResourceItem, UserProfile } from '../types';
+import { isOwnerEmail } from '../types';
+import { ResourceActionMenu } from '../components/ResourceActionMenu';
 
 interface DocumentsPageProps {
   resources: ResourceItem[];
+  user?: UserProfile | null;
   onAddClick: () => void;
+  onOpenResource: (resource: ResourceItem) => void;
+  onDownloadResource: (resource: ResourceItem) => void;
+  onEditResource: (resource: ResourceItem) => void;
+  onDeleteResource: (resource: ResourceItem) => void;
 }
 
-export const DocumentsPage: React.FC<DocumentsPageProps> = ({ resources, onAddClick }) => {
+export const DocumentsPage: React.FC<DocumentsPageProps> = ({
+  resources,
+  user,
+  onAddClick,
+  onOpenResource,
+  onDownloadResource,
+  onEditResource,
+  onDeleteResource,
+}) => {
+  const canAdd = isOwnerEmail(user?.email);
   const [docSearch, setDocSearch] = useState('');
-  const pdfResources = resources.filter(r => r.type === 'PDF');
+  const pdfResources = resources.filter((r) => r.type === 'PDF');
 
-  const filteredDocs = pdfResources.filter(doc => 
-    doc.title.toLowerCase().includes(docSearch.toLowerCase()) ||
-    doc.description.toLowerCase().includes(docSearch.toLowerCase()) ||
-    doc.tags.some(t => t.toLowerCase().includes(docSearch.toLowerCase()))
+  const filteredDocs = pdfResources.filter(
+    (doc) =>
+      doc.title.toLowerCase().includes(docSearch.toLowerCase()) ||
+      doc.description.toLowerCase().includes(docSearch.toLowerCase()) ||
+      doc.tags.some((t) => t.toLowerCase().includes(docSearch.toLowerCase()))
   );
 
   return (
@@ -28,41 +45,19 @@ export const DocumentsPage: React.FC<DocumentsPageProps> = ({ resources, onAddCl
           <div>
             <h2 className="text-xl font-bold text-white">Documents & Fichiers PDF</h2>
             <p className="text-xs text-gray-400 mt-0.5">
-              Indexation et recherche textuelle automatique dans les PDF.
+              Vos documents et fichiers PDF personnels.
             </p>
           </div>
         </div>
 
-        <button
-          onClick={onAddClick}
-          className="px-4 py-2.5 rounded-xl bg-[#51D1B3] text-[#0B0F17] font-bold text-xs hover:bg-[#3EB89B] transition-all shadow-md shadow-[#51D1B3]/20 flex items-center gap-2 cursor-pointer w-fit"
-        >
-          <Upload className="w-4 h-4" /> Importer un PDF
-        </button>
-      </div>
-
-      {/* PDF Processing Pipeline Workflow Indicator */}
-      <div className="p-4 rounded-2xl bg-[#0B0F17]/80 border border-[#222E42]">
-        <p className="text-xs font-semibold text-gray-300 mb-3 flex items-center gap-2">
-          <FileCode className="w-4 h-4 text-[#51D1B3]" /> Pipeline d'indexation des PDF :
-        </p>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-[11px]">
-          <div className="p-2 rounded-lg bg-[#151C28] border border-[#222E42] text-center text-gray-300">
-            1. Upload PDF
-          </div>
-          <div className="p-2 rounded-lg bg-[#151C28] border border-[#222E42] text-center text-gray-300">
-            2. Extraction Texte
-          </div>
-          <div className="p-2 rounded-lg bg-[#151C28] border border-[#222E42] text-center text-gray-300">
-            3. Découpage
-          </div>
-          <div className="p-2 rounded-lg bg-[#151C28] border border-[#222E42] text-center text-[#51D1B3] font-semibold">
-            4. Embedding Vectoriel
-          </div>
-          <div className="p-2 rounded-lg bg-[#51D1B3]/10 border border-[#51D1B3]/30 text-center text-[#51D1B3] font-bold col-span-2 md:col-span-1">
-            5. Stockage pgvector
-          </div>
-        </div>
+        {canAdd && (
+          <button
+            onClick={onAddClick}
+            className="px-4 py-2.5 rounded-xl bg-[#51D1B3] text-[#0B0F17] font-bold text-xs hover:bg-[#3EB89B] transition-all shadow-md shadow-[#51D1B3]/20 flex items-center gap-2 cursor-pointer w-fit"
+          >
+            <Plus className="w-4 h-4" /> Ajouter un PDF
+          </button>
+        )}
       </div>
 
       {/* Filter & Search */}
@@ -85,35 +80,34 @@ export const DocumentsPage: React.FC<DocumentsPageProps> = ({ resources, onAddCl
           </div>
           <h3 className="text-base font-bold text-white">Aucun document PDF</h3>
           <p className="text-xs text-gray-400 max-w-md mx-auto">
-            Aucun document n'a encore été importé. Importez des fichiers PDF pour démarrer l'extraction de texte et l'indexation vectorielle.
+            Aucun document n'a encore été importé.
           </p>
-          <button
-            onClick={onAddClick}
-            className="px-5 py-2.5 rounded-xl bg-[#51D1B3] text-[#0B0F17] font-bold text-xs hover:bg-[#3EB89B] transition-all inline-flex items-center gap-2 cursor-pointer shadow-md shadow-[#51D1B3]/20"
-          >
-            <Upload className="w-4 h-4" />
-            <span>Importer un PDF</span>
-          </button>
+          {canAdd && (
+            <button
+              onClick={onAddClick}
+              className="px-5 py-2.5 rounded-xl bg-[#51D1B3] text-[#0B0F17] font-bold text-xs hover:bg-[#3EB89B] transition-all inline-flex items-center gap-2 cursor-pointer shadow-md shadow-[#51D1B3]/20"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Ajouter un PDF</span>
+            </button>
+          )}
         </div>
       ) : (
         <div className="space-y-3">
           {filteredDocs.map((doc) => (
-            <div 
+            <div
               key={doc.id}
-              className="p-5 rounded-2xl bg-[#151C28] border border-[#222E42] hover:border-[#51D1B3]/40 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4"
+              className="p-5 rounded-2xl bg-[#151C28] border border-[#222E42] hover:border-[#51D1B3]/40 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 relative group"
             >
-              <div className="flex items-start gap-4">
+              <div className="flex items-start gap-4 flex-1">
                 <div className="p-3 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 shrink-0">
                   <FileText className="w-6 h-6" />
                 </div>
-                <div>
+                <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <h4 className="text-base font-bold text-white hover:text-[#51D1B3] transition-colors">
+                    <h4 className="text-base font-bold text-white hover:text-[#51D1B3] transition-colors truncate">
                       {doc.title}
                     </h4>
-                    <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1 font-semibold">
-                      <CheckCircle2 className="w-3 h-3" /> Indexé
-                    </span>
                   </div>
                   <p className="text-xs text-gray-400 mt-1 leading-relaxed max-w-2xl">
                     {doc.description}
@@ -121,7 +115,10 @@ export const DocumentsPage: React.FC<DocumentsPageProps> = ({ resources, onAddCl
 
                   <div className="flex items-center gap-2 mt-3 flex-wrap">
                     {doc.tags.map((tag, idx) => (
-                      <span key={idx} className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#0B0F17] border border-[#222E42] text-[10px] text-gray-300">
+                      <span
+                        key={idx}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#0B0F17] border border-[#222E42] text-[10px] text-gray-300"
+                      >
                         <Tag className="w-2.5 h-2.5 text-[#51D1B3]" />
                         {tag}
                       </span>
@@ -132,12 +129,14 @@ export const DocumentsPage: React.FC<DocumentsPageProps> = ({ resources, onAddCl
               </div>
 
               <div className="flex items-center gap-2 self-end md:self-center">
-                <button className="p-2.5 rounded-xl bg-[#0B0F17] border border-[#222E42] text-gray-300 hover:text-[#51D1B3] hover:border-[#51D1B3]/40 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer">
-                  <Download className="w-4 h-4" /> Télécharger
-                </button>
-                <button className="p-2.5 rounded-xl bg-[#51D1B3]/10 text-[#51D1B3] border border-[#51D1B3]/30 text-xs font-semibold hover:bg-[#51D1B3]/20 flex items-center gap-1.5 transition-colors cursor-pointer">
-                  Consulter <ExternalLink className="w-3.5 h-3.5" />
-                </button>
+                {/* 3-Dots Vertical Action Menu */}
+                <ResourceActionMenu
+                  resource={doc}
+                  onOpen={onOpenResource}
+                  onDownload={onDownloadResource}
+                  onEdit={onEditResource}
+                  onDelete={onDeleteResource}
+                />
               </div>
             </div>
           ))}
@@ -146,3 +145,4 @@ export const DocumentsPage: React.FC<DocumentsPageProps> = ({ resources, onAddCl
     </div>
   );
 };
+

@@ -5,12 +5,12 @@ import {
   Link as LinkIcon, 
   StickyNote, 
   Tag, 
-  ExternalLink,
-  Sparkles,
+  Plus,
   Inbox,
   Clock
 } from 'lucide-react';
 import type { ResourceItem, UserProfile } from '../types';
+import { isOwnerEmail } from '../types';
 
 interface DashboardProps {
   user: UserProfile;
@@ -31,6 +31,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   activeTab,
   onAddClick
 }) => {
+  const canAdd = isOwnerEmail(user.email);
+
   const getTypeBadgeColor = (type: string) => {
     switch (type) {
       case 'PDF': return 'bg-red-500/10 text-red-400 border-red-500/20';
@@ -66,57 +68,63 @@ export const Dashboard: React.FC<DashboardProps> = ({
       <div className="p-6 lg:p-8 rounded-3xl bg-gradient-to-r from-[#151C28] via-[#101622] to-[#151C28] border border-[#222E42] relative overflow-hidden shadow-xl">
         <div className="absolute top-0 right-0 w-96 h-96 bg-[#51D1B3]/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
         
-        <div className="relative z-10">
-          <div className="flex items-center gap-2 text-[#51D1B3] text-xs font-semibold uppercase tracking-wider mb-2">
-            <Sparkles className="w-4 h-4" /> PersonalAI • Tableau de bord
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div>
+            <p className="text-gray-400 text-sm max-w-2xl leading-relaxed">
+              Vos connaissances, documents et notes sont centralisés et sécurisés.
+            </p>
           </div>
-          <h2 className="text-2xl lg:text-3xl font-extrabold text-white tracking-tight">
-            Bonjour {user.name} 👋
-          </h2>
-          <p className="text-gray-400 text-sm max-w-2xl mt-2 leading-relaxed">
-            Bienvenue sur votre coffre-fort numérique. Vos connaissances, documents et notes sont centralisés et sécurisés.
-          </p>
 
-          {/* Quick Stats Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
-            <div className="p-4 rounded-2xl bg-[#0B0F17]/70 border border-[#222E42] flex items-center gap-3.5 hover:border-[#51D1B3]/30 transition-all">
-              <div className="p-3 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20">
-                <FileText className="w-5 h-5" />
-              </div>
-              <div>
-                <p className="text-xs text-gray-400 font-medium">PDF & Docs</p>
-                <p className="text-xl font-bold text-white">{countPdf}</p>
-              </div>
+          {canAdd && onAddClick && (
+            <button
+              onClick={onAddClick}
+              className="px-5 py-3 rounded-2xl bg-[#51D1B3] text-[#0B0F17] font-bold text-xs hover:bg-[#3EB89B] transition-all shadow-lg shadow-[#51D1B3]/20 flex items-center gap-2 cursor-pointer shrink-0 w-fit"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Ajouter une ressource</span>
+            </button>
+          )}
+        </div>
+
+        {/* Quick Stats Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 relative z-10">
+          <div className="p-4 rounded-2xl bg-[#0B0F17]/70 border border-[#222E42] flex items-center gap-3.5 hover:border-[#51D1B3]/30 transition-all">
+            <div className="p-3 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20">
+              <FileText className="w-5 h-5" />
             </div>
-
-            <div className="p-4 rounded-2xl bg-[#0B0F17]/70 border border-[#222E42] flex items-center gap-3.5 hover:border-[#51D1B3]/30 transition-all">
-              <div className="p-3 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20">
-                <ImageIcon className="w-5 h-5" />
-              </div>
-              <div>
-                <p className="text-xs text-gray-400 font-medium">Images</p>
-                <p className="text-xl font-bold text-white">{countImg}</p>
-              </div>
+            <div>
+              <p className="text-xs text-gray-400 font-medium">PDF & Docs</p>
+              <p className="text-xl font-bold text-white">{countPdf}</p>
             </div>
+          </div>
 
-            <div className="p-4 rounded-2xl bg-[#0B0F17]/70 border border-[#222E42] flex items-center gap-3.5 hover:border-[#51D1B3]/30 transition-all">
-              <div className="p-3 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                <LinkIcon className="w-5 h-5" />
-              </div>
-              <div>
-                <p className="text-xs text-gray-400 font-medium">Liens Web</p>
-                <p className="text-xl font-bold text-white">{countLink}</p>
-              </div>
+          <div className="p-4 rounded-2xl bg-[#0B0F17]/70 border border-[#222E42] flex items-center gap-3.5 hover:border-[#51D1B3]/30 transition-all">
+            <div className="p-3 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20">
+              <ImageIcon className="w-5 h-5" />
             </div>
+            <div>
+              <p className="text-xs text-gray-400 font-medium">Images</p>
+              <p className="text-xl font-bold text-white">{countImg}</p>
+            </div>
+          </div>
 
-            <div className="p-4 rounded-2xl bg-[#0B0F17]/70 border border-[#222E42] flex items-center gap-3.5 hover:border-[#51D1B3]/30 transition-all">
-              <div className="p-3 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                <StickyNote className="w-5 h-5" />
-              </div>
-              <div>
-                <p className="text-xs text-gray-400 font-medium">Notes</p>
-                <p className="text-xl font-bold text-white">{countNote}</p>
-              </div>
+          <div className="p-4 rounded-2xl bg-[#0B0F17]/70 border border-[#222E42] flex items-center gap-3.5 hover:border-[#51D1B3]/30 transition-all">
+            <div className="p-3 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20">
+              <LinkIcon className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-xs text-gray-400 font-medium">Liens Web</p>
+              <p className="text-xl font-bold text-white">{countLink}</p>
+            </div>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-[#0B0F17]/70 border border-[#222E42] flex items-center gap-3.5 hover:border-[#51D1B3]/30 transition-all">
+            <div className="p-3 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+              <StickyNote className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-xs text-gray-400 font-medium">Notes</p>
+              <p className="text-xl font-bold text-white">{countNote}</p>
             </div>
           </div>
         </div>
@@ -165,7 +173,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               ? `Aucun élément ne correspond à votre recherche "${searchQuery}".` 
               : "Aucune ressource n'a encore été ajoutée dans cette section."}
           </p>
-          {onAddClick && (
+          {canAdd && onAddClick && (
             <button
               onClick={onAddClick}
               className="mt-4 px-4 py-2 rounded-xl bg-[#51D1B3]/10 text-[#51D1B3] border border-[#51D1B3]/20 text-xs font-semibold hover:bg-[#51D1B3]/20 transition-all"
@@ -200,22 +208,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
               </div>
 
               <div>
-                <div className="flex items-center gap-1.5 flex-wrap mb-4">
+                <div className="flex items-center gap-1.5 flex-wrap">
                   {item.tags.map((tag, idx) => (
                     <span key={idx} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-[#0B0F17] border border-[#222E42] text-[10px] text-gray-300 font-medium">
                       <Tag className="w-2.5 h-2.5 text-[#51D1B3]" />
                       {tag}
                     </span>
                   ))}
-                </div>
-
-                <div className="pt-3 border-t border-[#222E42]/80 flex items-center justify-between text-xs text-gray-400">
-                  <span className="text-[11px] text-gray-400">
-                    Catégorie: <strong className="text-gray-200 font-normal">{item.category}</strong>
-                  </span>
-                  <button className="text-[#51D1B3] hover:underline flex items-center gap-1 font-semibold text-xs cursor-pointer">
-                    Consulter <ExternalLink className="w-3 h-3" />
-                  </button>
                 </div>
               </div>
             </div>
@@ -225,3 +224,4 @@ export const Dashboard: React.FC<DashboardProps> = ({
     </div>
   );
 };
+

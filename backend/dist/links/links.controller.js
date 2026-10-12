@@ -10,19 +10,34 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-import { Controller, Get, Post, Body } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Param, Headers, UseGuards, Req, } from '@nestjs/common';
 import { LinksService } from './links.service.js';
 import { CreateLinkDto } from './dto/create-link.dto.js';
+import { SecurityLogsService } from '../security/security-logs.service.js';
+import { AuthGuard } from '../auth/auth.guard.js';
 let LinksController = class LinksController {
     linksService;
-    constructor(linksService) {
+    logsService;
+    constructor(linksService, logsService) {
         this.linksService = linksService;
+        this.logsService = logsService;
     }
     async findAll() {
         return this.linksService.findAll();
     }
-    async create(createLinkDto) {
-        return this.linksService.create(createLinkDto);
+    async create(createLinkDto, email, req) {
+        const link = await this.linksService.create(createLinkDto);
+        const userEmail = email || 'mahamadousidibe2004@gmail.com';
+        const ip = req?.headers['x-forwarded-for'] || req?.ip || '127.0.0.1';
+        await this.logsService.logAudit(userEmail, 'UPLOAD', 'LINK', link.id, link.name, 'Lien web enregistré dans la base de données', ip);
+        return link;
+    }
+    async remove(id, email, req) {
+        const userEmail = email || 'mahamadousidibe2004@gmail.com';
+        const ip = req?.headers['x-forwarded-for'] || req?.ip || '127.0.0.1';
+        const result = await this.linksService.remove(id);
+        await this.logsService.logAudit(userEmail, 'DELETE', 'LINK', id, `Link-${id}`, `Suppression du lien ${id} de la base de données`, ip);
+        return result;
     }
 };
 __decorate([
@@ -34,13 +49,26 @@ __decorate([
 __decorate([
     Post(),
     __param(0, Body()),
+    __param(1, Headers('x-user-email')),
+    __param(2, Req()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [CreateLinkDto]),
+    __metadata("design:paramtypes", [CreateLinkDto, String, Object]),
     __metadata("design:returntype", Promise)
 ], LinksController.prototype, "create", null);
+__decorate([
+    Delete(':id'),
+    __param(0, Param('id')),
+    __param(1, Headers('x-user-email')),
+    __param(2, Req()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:returntype", Promise)
+], LinksController.prototype, "remove", null);
 LinksController = __decorate([
     Controller('links'),
-    __metadata("design:paramtypes", [LinksService])
+    UseGuards(AuthGuard),
+    __metadata("design:paramtypes", [LinksService,
+        SecurityLogsService])
 ], LinksController);
 export { LinksController };
 //# sourceMappingURL=links.controller.js.map

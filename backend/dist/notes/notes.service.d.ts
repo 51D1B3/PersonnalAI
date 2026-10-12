@@ -18,4 +18,8 @@ export declare class NotesService {
     constructor(supabaseService: SupabaseService);
     findAll(): Promise<NoteItem[]>;
     create(createNoteDto: CreateNoteDto): Promise<NoteItem>;
+    remove(id: string): Promise<{
+        success: boolean;
+        id: string;
+    }>;
 }

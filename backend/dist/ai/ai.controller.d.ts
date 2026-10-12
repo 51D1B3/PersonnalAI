@@ -13,4 +13,5 @@ export declare class AiController {
         vectorLength: number;
         sampleDimensions: number[];
     }>;
+    askRag(question: string, documents: any[]): Promise<import("./embedding.service.js").RagResponse>;
 }

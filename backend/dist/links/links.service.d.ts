@@ -17,4 +17,8 @@ export declare class LinksService {
     constructor(supabaseService: SupabaseService);
     findAll(): Promise<LinkItem[]>;
     create(createLinkDto: CreateLinkDto): Promise<LinkItem>;
+    remove(id: string): Promise<{
+        success: boolean;
+        id: string;
+    }>;
 }

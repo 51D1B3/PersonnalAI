@@ -20,7 +20,7 @@ let NotesService = NotesService_1 = class NotesService {
     async findAll() {
         try {
             const client = this.supabaseService.getClient();
-            const { data, error } = await client.from('notes').select('*');
+            const { data, error } = await client.from('notes').select('*').order('created_at', { ascending: false });
             if (!error && data && data.length > 0) {
                 return data.map((n) => ({
                     id: n.id,
@@ -31,7 +31,7 @@ let NotesService = NotesService_1 = class NotesService {
                     tags: n.tags || [],
                     type: 'NOTE',
                     isVault: !!n.is_vault,
-                    date: new Date(n.created_at).toLocaleDateString('fr-FR'),
+                    date: new Date(n.created_at || Date.now()).toLocaleDateString('fr-FR'),
                 }));
             }
         }
@@ -44,8 +44,8 @@ let NotesService = NotesService_1 = class NotesService {
         const newNote = {
             id: `note-${Date.now()}`,
             title: createNoteDto.title,
-            description: createNoteDto.content.substring(0, 100),
-            content: createNoteDto.content,
+            description: createNoteDto.content ? createNoteDto.content.substring(0, 100) : 'Note',
+            content: createNoteDto.content || '',
             category: createNoteDto.category || 'Général',
             tags: createNoteDto.tags || ['Note'],
             type: 'NOTE',
@@ -70,6 +70,17 @@ let NotesService = NotesService_1 = class NotesService {
         }
         this.mockNotes.unshift(newNote);
         return newNote;
+    }
+    async remove(id) {
+        try {
+            const client = this.supabaseService.getClient();
+            await client.from('notes').delete().eq('id', id);
+        }
+        catch (e) {
+            this.logger.warn(`Erreur suppression note Supabase: ${e}`);
+        }
+        this.mockNotes = this.mockNotes.filter((n) => n.id !== id);
+        return { success: true, id };
     }
 };
 NotesService = NotesService_1 = __decorate([

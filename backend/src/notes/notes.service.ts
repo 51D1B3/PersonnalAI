@@ -18,6 +18,7 @@ export interface NoteItem {
 export class NotesService {
   private readonly logger = new Logger(NotesService.name);
 
+  // Reinitialisé à 0
   private mockNotes: NoteItem[] = [];
 
   constructor(private readonly supabaseService: SupabaseService) {}
@@ -25,7 +26,7 @@ export class NotesService {
   async findAll(): Promise<NoteItem[]> {
     try {
       const client = this.supabaseService.getClient();
-      const { data, error } = await client.from('notes').select('*');
+      const { data, error } = await client.from('notes').select('*').order('created_at', { ascending: false });
 
       if (!error && data && data.length > 0) {
         return data.map((n: any) => ({
@@ -37,7 +38,7 @@ export class NotesService {
           tags: n.tags || [],
           type: 'NOTE',
           isVault: !!n.is_vault,
-          date: new Date(n.created_at).toLocaleDateString('fr-FR'),
+          date: new Date(n.created_at || Date.now()).toLocaleDateString('fr-FR'),
         }));
       }
     } catch (e) {
@@ -51,8 +52,8 @@ export class NotesService {
     const newNote: NoteItem = {
       id: `note-${Date.now()}`,
       title: createNoteDto.title,
-      description: createNoteDto.content.substring(0, 100),
-      content: createNoteDto.content,
+      description: createNoteDto.content ? createNoteDto.content.substring(0, 100) : 'Note',
+      content: createNoteDto.content || '',
       category: createNoteDto.category || 'Général',
       tags: createNoteDto.tags || ['Note'],
       type: 'NOTE',
@@ -79,5 +80,17 @@ export class NotesService {
 
     this.mockNotes.unshift(newNote);
     return newNote;
+  }
+
+  async remove(id: string): Promise<{ success: boolean; id: string }> {
+    try {
+      const client = this.supabaseService.getClient();
+      await client.from('notes').delete().eq('id', id);
+    } catch (e) {
+      this.logger.warn(`Erreur suppression note Supabase: ${e}`);
+    }
+
+    this.mockNotes = this.mockNotes.filter((n) => n.id !== id);
+    return { success: true, id };
   }
 }

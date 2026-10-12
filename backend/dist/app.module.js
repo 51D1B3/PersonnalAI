@@ -6,6 +6,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 };
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { SupabaseModule } from './supabase/supabase.module.js';
@@ -19,6 +20,8 @@ import { UploadModule } from './upload/upload.module.js';
 import { AiModule } from './ai/ai.module.js';
 import { SearchModule } from './search/search.module.js';
 import { VideosModule } from './videos/videos.module.js';
+import { SecurityModule } from './security/security.module.js';
+import { RateLimitGuard } from './security/rate-limit.guard.js';
 let AppModule = class AppModule {
 };
 AppModule = __decorate([
@@ -28,6 +31,7 @@ AppModule = __decorate([
                 isGlobal: true,
             }),
             SupabaseModule,
+            SecurityModule,
             AuthModule,
             DocumentsModule,
             ImagesModule,
@@ -40,7 +44,13 @@ AppModule = __decorate([
             SearchModule,
         ],
         controllers: [AppController],
-        providers: [AppService],
+        providers: [
+            AppService,
+            {
+                provide: APP_GUARD,
+                useClass: RateLimitGuard,
+            },
+        ],
     })
 ], AppModule);
 export { AppModule };

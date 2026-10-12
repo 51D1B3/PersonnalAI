@@ -20,7 +20,7 @@ let LinksService = LinksService_1 = class LinksService {
     async findAll() {
         try {
             const client = this.supabaseService.getClient();
-            const { data, error } = await client.from('links').select('*');
+            const { data, error } = await client.from('links').select('*').order('created_at', { ascending: false });
             if (!error && data && data.length > 0) {
                 return data.map((l) => ({
                     id: l.id,
@@ -30,7 +30,7 @@ let LinksService = LinksService_1 = class LinksService {
                     category: l.category || 'Général',
                     tags: l.tags || [],
                     type: 'LINK',
-                    date: new Date(l.created_at).toLocaleDateString('fr-FR'),
+                    date: new Date(l.created_at || Date.now()).toLocaleDateString('fr-FR'),
                 }));
             }
         }
@@ -68,6 +68,17 @@ let LinksService = LinksService_1 = class LinksService {
         }
         this.mockLinks.unshift(newLink);
         return newLink;
+    }
+    async remove(id) {
+        try {
+            const client = this.supabaseService.getClient();
+            await client.from('links').delete().eq('id', id);
+        }
+        catch (e) {
+            this.logger.warn(`Erreur suppression link Supabase: ${e}`);
+        }
+        this.mockLinks = this.mockLinks.filter((l) => l.id !== id);
+        return { success: true, id };
     }
 };
 LinksService = LinksService_1 = __decorate([

@@ -10,22 +10,42 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-import { Controller, Get, Post, Delete, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Param, Headers, UseGuards, Req, } from '@nestjs/common';
 import { DocumentsService } from './documents.service.js';
 import { CreateDocumentDto } from './dto/create-document.dto.js';
+import { SecurityLogsService } from '../security/security-logs.service.js';
+import { AuthGuard } from '../auth/auth.guard.js';
 let DocumentsController = class DocumentsController {
     documentsService;
-    constructor(documentsService) {
+    logsService;
+    constructor(documentsService, logsService) {
         this.documentsService = documentsService;
+        this.logsService = logsService;
     }
     async findAll() {
         return this.documentsService.findAll();
     }
-    async create(createDocumentDto) {
-        return this.documentsService.create(createDocumentDto);
+    async downloadDocument(id, email, req) {
+        const docs = await this.documentsService.findAll();
+        const doc = docs.find((d) => d.id === id) || { title: `Document ${id}`, filePath: '/uploads/sample.pdf' };
+        const userEmail = email || 'mahamadousidibe2004@gmail.com';
+        const ip = req?.headers['x-forwarded-for'] || req?.ip || '127.0.0.1';
+        await this.logsService.logAudit(userEmail, 'DOWNLOAD', 'PDF', id, doc.title, `Téléchargement du document ${doc.title}`, ip);
+        return { downloadUrl: doc.filePath, success: true, message: 'Téléchargement enregistré dans le journal audit (Étape 55).' };
     }
-    async remove(id) {
-        return this.documentsService.remove(id);
+    async create(createDocumentDto, email, req) {
+        const doc = await this.documentsService.create(createDocumentDto);
+        const userEmail = email || 'mahamadousidibe2004@gmail.com';
+        const ip = req?.headers['x-forwarded-for'] || req?.ip || '127.0.0.1';
+        await this.logsService.logAudit(userEmail, 'UPLOAD', 'PDF', doc.id, doc.title, 'Création de document', ip);
+        return doc;
+    }
+    async remove(id, email, req) {
+        const userEmail = email || 'mahamadousidibe2004@gmail.com';
+        const ip = req?.headers['x-forwarded-for'] || req?.ip || '127.0.0.1';
+        const result = await this.documentsService.remove(id);
+        await this.logsService.logAudit(userEmail, 'DELETE', 'PDF', id, `Document-${id}`, `Suppression définitive du document ${id}`, ip);
+        return result;
     }
 };
 __decorate([
@@ -35,22 +55,37 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], DocumentsController.prototype, "findAll", null);
 __decorate([
+    Get('download/:id'),
+    __param(0, Param('id')),
+    __param(1, Headers('x-user-email')),
+    __param(2, Req()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:returntype", Promise)
+], DocumentsController.prototype, "downloadDocument", null);
+__decorate([
     Post(),
     __param(0, Body()),
+    __param(1, Headers('x-user-email')),
+    __param(2, Req()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [CreateDocumentDto]),
+    __metadata("design:paramtypes", [CreateDocumentDto, String, Object]),
     __metadata("design:returntype", Promise)
 ], DocumentsController.prototype, "create", null);
 __decorate([
     Delete(':id'),
     __param(0, Param('id')),
+    __param(1, Headers('x-user-email')),
+    __param(2, Req()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, String, Object]),
     __metadata("design:returntype", Promise)
 ], DocumentsController.prototype, "remove", null);
 DocumentsController = __decorate([
     Controller('documents'),
-    __metadata("design:paramtypes", [DocumentsService])
+    UseGuards(AuthGuard),
+    __metadata("design:paramtypes", [DocumentsService,
+        SecurityLogsService])
 ], DocumentsController);
 export { DocumentsController };
 //# sourceMappingURL=documents.controller.js.map

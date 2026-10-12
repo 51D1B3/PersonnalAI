@@ -17,22 +17,33 @@ import {
   Zap
 } from 'lucide-react';
 import type { ResourceItem } from '../types';
+import { ResourceActionMenu } from '../components/ResourceActionMenu';
 
 interface RecherchePageProps {
   resources: ResourceItem[];
+  onOpenResource: (resource: ResourceItem) => void;
+  onDownloadResource: (resource: ResourceItem) => void;
+  onEditResource: (resource: ResourceItem) => void;
+  onDeleteResource: (resource: ResourceItem) => void;
 }
 
-export const RecherchePage: React.FC<RecherchePageProps> = ({ resources }) => {
-  // Tab Mode: 'semantic' (Phase 8 & 9) | 'classic' (Phase 7: Étape 29 & 30) | 'ai_test' (Étape 31 - 34)
+export const RecherchePage: React.FC<RecherchePageProps> = ({
+  resources,
+  onOpenResource,
+  onDownloadResource,
+  onEditResource,
+  onDeleteResource,
+}) => {
+  // Tab Mode: 'semantic' | 'classic' | 'ai_test'
   const [activeTab, setActiveTab] = useState<'semantic' | 'classic' | 'ai_test'>('semantic');
 
-  // Semantic Search State (Étape 38 & 39)
+  // Semantic Search State
   const [aiQuery, setAiQuery] = useState("cours où j'ai appris les hooks React");
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<ResourceItem[]>(resources);
   const [hasSearched, setHasSearched] = useState(true);
 
-  // Classic Search State (Étape 29 & 30)
+  // Classic Search State
   const [classicName, setClassicName] = useState('');
   const [classicCategory, setClassicCategory] = useState('');
   const [classicTag, setClassicTag] = useState('');
@@ -40,7 +51,7 @@ export const RecherchePage: React.FC<RecherchePageProps> = ({ resources }) => {
   const [sortBy, setSortBy] = useState<'date' | 'title'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
-  // AI Diagnostic Bench State (Étape 31, 32, 33, 34, 35)
+  // AI Diagnostic Bench State
   const [ollamaStatus, setOllamaStatus] = useState<any>(null);
   const [isLoadingStatus, setIsLoadingStatus] = useState(false);
   const [testPrompt, setTestPrompt] = useState("Explique brièvement les avantages de React avec TypeScript");
@@ -57,7 +68,6 @@ export const RecherchePage: React.FC<RecherchePageProps> = ({ resources }) => {
     "Notes sur la configuration des JWT tokens"
   ];
 
-  // Execute Semantic Search via POST /search/semantic (Étape 38 & 39)
   const executeSemanticSearch = async (queryText: string) => {
     if (!queryText.trim()) return;
     setIsSearching(true);
@@ -82,7 +92,6 @@ export const RecherchePage: React.FC<RecherchePageProps> = ({ resources }) => {
       // Local calculation fallback
     }
 
-    // Local semantic scoring fallback with Cosine Distance simulation
     const qLower = queryText.toLowerCase();
     const scored = resources.map(item => {
       let score = 75;
@@ -116,11 +125,9 @@ export const RecherchePage: React.FC<RecherchePageProps> = ({ resources }) => {
     executeSemanticSearch(promptText);
   };
 
-  // Filter & Sort Classic Results (Étape 29 & 30)
   const getFilteredClassicResults = () => {
     let list = [...resources];
 
-    // Recherche par nom
     if (classicName.trim()) {
       const q = classicName.trim().toLowerCase();
       list = list.filter(item => 
@@ -129,24 +136,20 @@ export const RecherchePage: React.FC<RecherchePageProps> = ({ resources }) => {
       );
     }
 
-    // Recherche par catégorie
     if (classicCategory.trim()) {
       const cat = classicCategory.trim().toLowerCase();
       list = list.filter(item => item.category.toLowerCase().includes(cat));
     }
 
-    // Recherche par tag
     if (classicTag.trim()) {
       const tagQuery = classicTag.trim().toLowerCase();
       list = list.filter(item => item.tags.some(t => t.toLowerCase().includes(tagQuery)));
     }
 
-    // Recherche par type
     if (classicType !== 'ALL') {
       list = list.filter(item => item.type === classicType);
     }
 
-    // Tri (Étape 30)
     list.sort((a, b) => {
       if (sortBy === 'title') {
         return sortOrder === 'asc' 
@@ -162,7 +165,6 @@ export const RecherchePage: React.FC<RecherchePageProps> = ({ resources }) => {
     return list;
   };
 
-  // AI Independent Diagnostic Checks (Étape 31-35)
   const handleCheckOllama = async () => {
     setIsLoadingStatus(true);
     try {
@@ -280,7 +282,7 @@ export const RecherchePage: React.FC<RecherchePageProps> = ({ resources }) => {
         </div>
       </div>
 
-      {/* TAB 1: RECHERCHE INTELLIGENTE SÉMANTIQUE (PHASE 8 & 9 - Étape 38, 39) */}
+      {/* TAB 1: RECHERCHE INTELLIGENTE SÉMANTIQUE */}
       {activeTab === 'semantic' && (
         <div className="space-y-6">
           {/* Banner */}
@@ -329,7 +331,7 @@ export const RecherchePage: React.FC<RecherchePageProps> = ({ resources }) => {
 
               {/* Sample Prompts Pills */}
               <div className="mt-4 flex items-center gap-2 flex-wrap text-xs text-gray-400">
-                <span className="font-semibold text-gray-300">Exemples (Étape 39) :</span>
+                <span className="font-semibold text-gray-300">Exemples :</span>
                 {samplePrompts.map((prompt, idx) => (
                   <button
                     key={idx}
@@ -385,7 +387,7 @@ export const RecherchePage: React.FC<RecherchePageProps> = ({ resources }) => {
               <div className="space-y-3">
                 {searchResults.length === 0 ? (
                   <div className="p-8 text-center bg-[#151C28] border border-[#222E42] rounded-3xl text-gray-400 text-xs">
-                    Aucune ressource trouvée pour cette recherche sémantique. Ajoutez de nouvelles ressources pour enrichir la base pgvector !
+                    Aucune ressource trouvée pour cette recherche sémantique.
                   </div>
                 ) : (
                   searchResults.map((item, idx) => {
@@ -393,9 +395,9 @@ export const RecherchePage: React.FC<RecherchePageProps> = ({ resources }) => {
                     return (
                       <div 
                         key={item.id}
-                        className="p-5 rounded-2xl bg-[#151C28] border border-[#222E42] hover:border-[#51D1B3]/50 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4"
+                        className="p-5 rounded-2xl bg-[#151C28] border border-[#222E42] hover:border-[#51D1B3]/50 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 relative"
                       >
-                        <div className="space-y-2 max-w-3xl">
+                        <div className="space-y-2 flex-1">
                           <div className="flex items-center gap-2">
                             <span className="px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-[#51D1B3]/10 text-[#51D1B3] border border-[#51D1B3]/20">
                               Match {score}%
@@ -403,7 +405,6 @@ export const RecherchePage: React.FC<RecherchePageProps> = ({ resources }) => {
                             <span className="text-[11px] px-2 py-0.5 rounded bg-gray-500/10 text-gray-300 font-semibold border border-gray-500/20">
                               {item.type}
                             </span>
-                            <span className="text-xs text-gray-400">• {item.category}</span>
                           </div>
 
                           <h4 className="text-base font-bold text-white hover:text-[#51D1B3] transition-colors">
@@ -424,10 +425,22 @@ export const RecherchePage: React.FC<RecherchePageProps> = ({ resources }) => {
                           </div>
                         </div>
 
-                        <button className="px-4 py-2.5 rounded-xl bg-[#51D1B3] text-[#0B0F17] font-bold text-xs hover:bg-[#3EB89B] transition-all flex items-center gap-1.5 shrink-0 cursor-pointer self-end md:self-center">
-                          <span>Ouvrir la ressource</span>
-                          <ExternalLink className="w-3.5 h-3.5" />
-                        </button>
+                        <div className="flex items-center gap-2 shrink-0 self-end md:self-center">
+                          <button
+                            onClick={() => onOpenResource(item)}
+                            className="px-4 py-2.5 rounded-xl bg-[#51D1B3] text-[#0B0F17] font-bold text-xs hover:bg-[#3EB89B] transition-all flex items-center gap-1.5 cursor-pointer shadow-md shadow-[#51D1B3]/20"
+                          >
+                            <span>Ouvrir</span>
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </button>
+                          <ResourceActionMenu
+                            resource={item}
+                            onOpen={onOpenResource}
+                            onDownload={onDownloadResource}
+                            onEdit={onEditResource}
+                            onDelete={onDeleteResource}
+                          />
+                        </div>
                       </div>
                     );
                   })
@@ -438,7 +451,7 @@ export const RecherchePage: React.FC<RecherchePageProps> = ({ resources }) => {
         </div>
       )}
 
-      {/* TAB 2: RECHERCHE CLASSIQUE (PHASE 7 - Étape 29 & 30) */}
+      {/* TAB 2: RECHERCHE CLASSIQUE */}
       {activeTab === 'classic' && (
         <div className="space-y-6">
           {/* Filter Toolbar Controls */}
@@ -446,7 +459,7 @@ export const RecherchePage: React.FC<RecherchePageProps> = ({ resources }) => {
             <div className="flex items-center justify-between pb-3 border-b border-[#222E42]">
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
                 <Filter className="w-4 h-4 text-[#51D1B3]" />
-                Recherche par nom, catégorie, tag, type, filtres et tri (Étape 29 & 30)
+                Recherche par nom, catégorie, tag, type, filtres et tri
               </h3>
               <button 
                 onClick={() => {
@@ -455,14 +468,13 @@ export const RecherchePage: React.FC<RecherchePageProps> = ({ resources }) => {
                   setClassicTag('');
                   setClassicType('ALL');
                 }}
-                className="text-xs text-[#51D1B3] hover:underline"
+                className="text-xs text-[#51D1B3] hover:underline cursor-pointer"
               >
                 Réinitialiser les filtres
               </button>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              {/* 1. Recherche par nom (Étape 29) */}
               <div>
                 <label className="block text-xs font-semibold text-gray-400 mb-1">Recherche par nom</label>
                 <div className="relative">
@@ -477,7 +489,6 @@ export const RecherchePage: React.FC<RecherchePageProps> = ({ resources }) => {
                 </div>
               </div>
 
-              {/* 2. Recherche par catégorie (Étape 29) */}
               <div>
                 <label className="block text-xs font-semibold text-gray-400 mb-1">Recherche par catégorie</label>
                 <input
@@ -489,7 +500,6 @@ export const RecherchePage: React.FC<RecherchePageProps> = ({ resources }) => {
                 />
               </div>
 
-              {/* 3. Recherche par tag (Étape 29) */}
               <div>
                 <label className="block text-xs font-semibold text-gray-400 mb-1">Recherche par tag</label>
                 <div className="relative">
@@ -504,7 +514,6 @@ export const RecherchePage: React.FC<RecherchePageProps> = ({ resources }) => {
                 </div>
               </div>
 
-              {/* 4. Recherche par type (Étape 29) */}
               <div>
                 <label className="block text-xs font-semibold text-gray-400 mb-1">Recherche par type</label>
                 <select
@@ -522,10 +531,9 @@ export const RecherchePage: React.FC<RecherchePageProps> = ({ resources }) => {
               </div>
             </div>
 
-            {/* Sorting Toolbar (Étape 30) */}
             <div className="pt-3 border-t border-[#222E42] flex flex-wrap items-center justify-between gap-3 text-xs">
               <div className="flex items-center gap-3">
-                <span className="font-semibold text-gray-400">Tri (Étape 30) :</span>
+                <span className="font-semibold text-gray-400">Tri :</span>
                 <select
                   value={sortBy}
                   onChange={(e: any) => setSortBy(e.target.value)}
@@ -550,7 +558,6 @@ export const RecherchePage: React.FC<RecherchePageProps> = ({ resources }) => {
             </div>
           </div>
 
-          {/* Classic Search Results List */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {classicResults.length === 0 ? (
               <div className="col-span-full p-8 text-center bg-[#151C28] border border-[#222E42] rounded-3xl text-gray-400">
@@ -560,17 +567,26 @@ export const RecherchePage: React.FC<RecherchePageProps> = ({ resources }) => {
               classicResults.map((item) => (
                 <div 
                   key={item.id}
-                  className="p-5 rounded-2xl bg-[#151C28] border border-[#222E42] hover:border-[#51D1B3]/50 transition-all flex flex-col justify-between"
+                  className="p-5 rounded-2xl bg-[#151C28] border border-[#222E42] hover:border-[#51D1B3]/50 transition-all flex flex-col justify-between relative"
                 >
                   <div>
                     <div className="flex items-start justify-between gap-3 mb-2">
                       <span className="px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-[#51D1B3]/10 text-[#51D1B3] border border-[#51D1B3]/20">
                         {item.type}
                       </span>
-                      <span className="text-[11px] text-gray-400">{item.date}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] text-gray-400">{item.date}</span>
+                        <ResourceActionMenu
+                          resource={item}
+                          onOpen={onOpenResource}
+                          onDownload={onDownloadResource}
+                          onEdit={onEditResource}
+                          onDelete={onDeleteResource}
+                        />
+                      </div>
                     </div>
 
-                    <h4 className="text-base font-bold text-white mb-1">
+                    <h4 className="text-base font-bold text-white mb-1 truncate">
                       {item.title}
                     </h4>
 
@@ -588,11 +604,8 @@ export const RecherchePage: React.FC<RecherchePageProps> = ({ resources }) => {
                       ))}
                     </div>
 
-                    <div className="pt-2 border-t border-[#222E42] flex items-center justify-between text-xs text-gray-400">
-                      <span>Catégorie : <strong className="text-gray-300 font-medium">{item.category}</strong></span>
-                      <button className="text-[#51D1B3] hover:underline flex items-center gap-1 font-semibold">
-                        Ouvrir <ExternalLink className="w-3 h-3" />
-                      </button>
+                    <div className="pt-2 border-t border-[#222E42] flex items-center justify-end text-xs text-gray-400">
+                      <span className="text-[11px] text-gray-400">{item.date}</span>
                     </div>
                   </div>
                 </div>
@@ -602,15 +615,14 @@ export const RecherchePage: React.FC<RecherchePageProps> = ({ resources }) => {
         </div>
       )}
 
-      {/* TAB 3: BANC DE TEST IA LOCAL (Étape 31, 32, 33, 34, 35) */}
+      {/* TAB 3: BANC DE TEST IA LOCAL */}
       {activeTab === 'ai_test' && (
         <div className="space-y-6">
-          {/* Ollama Connection & Status Check (Étape 31 & 34) */}
           <div className="p-6 rounded-3xl bg-[#151C28] border border-[#222E42] space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-[#222E42]">
               <div className="flex items-center gap-2 text-white font-bold text-base">
                 <Activity className="w-5 h-5 text-[#51D1B3]" />
-                <span>Test de Connexion Ollama Local & Modèles (Étape 31, 32, 34)</span>
+                <span>Test de Connexion Ollama Local & Modèles</span>
               </div>
               <button
                 onClick={handleCheckOllama}
@@ -632,11 +644,11 @@ export const RecherchePage: React.FC<RecherchePageProps> = ({ resources }) => {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gray-400">Modèle d'Embeddings :</span>
-                  <span className="text-[#51D1B3] font-bold">nomic-embed-text (Étape 34)</span>
+                  <span className="text-[#51D1B3] font-bold">nomic-embed-text</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gray-400">Modèle LLM Local :</span>
-                  <span className="text-cyan-400 font-bold">llama3 / mistral (Étape 32)</span>
+                  <span className="text-cyan-400 font-bold">llama3 / mistral</span>
                 </div>
                 <p className="text-gray-400 pt-1 border-t border-[#222E42] italic">
                   {ollamaStatus.message}
@@ -645,15 +657,14 @@ export const RecherchePage: React.FC<RecherchePageProps> = ({ resources }) => {
             )}
           </div>
 
-          {/* Test AI completion independently (Étape 33) */}
           <div className="p-6 rounded-3xl bg-[#151C28] border border-[#222E42] space-y-4">
             <div className="flex items-center gap-2 text-white font-bold text-base pb-3 border-b border-[#222E42]">
               <Cpu className="w-5 h-5 text-[#51D1B3]" />
-              <span>Étape 33 — Tester l'IA indépendamment du site</span>
+              <span>Tester l'IA indépendamment du site</span>
             </div>
 
             <p className="text-xs text-gray-400">
-              Saisissez n'importe quelle consigne pour valider la réponse directe du modèle local sans passer par la recherche documentaire.
+              Saisissez n'importe quelle consigne pour valider la réponse directe du modèle local.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3">
@@ -681,11 +692,10 @@ export const RecherchePage: React.FC<RecherchePageProps> = ({ resources }) => {
             )}
           </div>
 
-          {/* Test EmbeddingService (Étape 35 & 36) */}
           <div className="p-6 rounded-3xl bg-[#151C28] border border-[#222E42] space-y-4">
             <div className="flex items-center gap-2 text-white font-bold text-base pb-3 border-b border-[#222E42]">
               <Database className="w-5 h-5 text-cyan-400" />
-              <span>Étape 35 & 36 — Test du service EmbeddingService (Transformers vectoriels)</span>
+              <span>Test du service EmbeddingService (Transformers vectoriels)</span>
             </div>
 
             <p className="text-xs text-gray-400">
